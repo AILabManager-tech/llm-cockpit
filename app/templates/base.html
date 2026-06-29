@@ -3,14 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LLM Cockpit V0</title>
+  <title>LLM Cockpit</title>
   <link rel="stylesheet" href="/static/app.css">
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/json-enc.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <h1>LLM Cockpit <span class="badge-version">V0</span></h1>
-    <p class="subtitle">Inventaire Ollama — lecture seule</p>
+    <h1>LLM Cockpit <span class="badge-version">V1</span></h1>
+    <p class="subtitle">Inventaire + contrôle minimal (load / unload / test)</p>
   </header>
   <main>
     {% block content %}{% endblock %}

@@ -33,6 +33,7 @@
         <th>Digest</th>
         <th>Modifié</th>
         <th>Expire</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
@@ -60,6 +61,33 @@
         <td class="digest">{{ (m.digest[:12] ~ "…") if m.digest else "—" }}</td>
         <td>{{ m.modified_at or "—" }}</td>
         <td>{{ m.expires_at or "—" }}</td>
+        <td class="row-actions">
+          {% if actions_enabled %}
+            {% if m.loaded %}
+            <button
+              class="btn-action unload"
+              hx-post="/api/actions/unload"
+              hx-ext="json-enc"
+              hx-vals='{"model": "{{ m.normalized_name }}"}'
+              hx-swap="none"
+              hx-on::after-request="htmx.trigger('#models-panel','refresh'); htmx.trigger('#actions-panel','refresh')">
+              Décharger
+            </button>
+            {% else %}
+            <button
+              class="btn-action load"
+              hx-post="/api/actions/load"
+              hx-ext="json-enc"
+              hx-vals='{"model": "{{ m.normalized_name }}"}'
+              hx-swap="none"
+              hx-on::after-request="htmx.trigger('#models-panel','refresh'); htmx.trigger('#actions-panel','refresh')">
+              Charger
+            </button>
+            {% endif %}
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

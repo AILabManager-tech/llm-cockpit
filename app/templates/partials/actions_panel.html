@@ -1,0 +1,32 @@
+<div class="actions-journal">
+  <h2>Journal d'actions</h2>
+  {% if not actions_enabled %}
+    <p class="empty-state">Actions désactivées (<code>ACTIONS_ENABLED=0</code>).</p>
+  {% endif %}
+  {% if not entries %}
+    <p class="empty-state">Aucune action enregistrée.</p>
+  {% else %}
+  <table class="journal">
+    <thead>
+      <tr>
+        <th>Horodatage</th>
+        <th>Action</th>
+        <th>Modèle</th>
+        <th>Statut</th>
+        <th>Détail</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr class="journal-row status-{{ e.status }}">
+        <td class="ts">{{ e.ts }}</td>
+        <td>{{ e.action }}</td>
+        <td class="model-name">{{ e.model }}</td>
+        <td><span class="pill st-{{ e.status }}">{{ e.status }}</span></td>
+        <td class="detail">{{ e.detail or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
