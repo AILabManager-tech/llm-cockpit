@@ -16,6 +16,7 @@ Branche : `phase/v8` · Tag : `v8`.
 | Tu veux valider que tout marche         | [`PARCOURS_VALIDATION_PAR_LES_TESTS.md`](PARCOURS_VALIDATION_PAR_LES_TESTS.md) |
 | Opérateur, tu installes/configures      | [`GUIDE_ADMIN_CONFIGURATION.md`](GUIDE_ADMIN_CONFIGURATION.md) |
 | Quelque chose ne marche pas             | [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md)        |
+| Tu veux un jumeau formatif interactif   | [`VALIDATION_TESTS_INTERACTIVE.html`](VALIDATION_TESTS_INTERACTIVE.html) — jumeau formatif cliquable de l’interface |
 
 ---
 
