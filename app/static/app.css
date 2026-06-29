@@ -127,3 +127,77 @@ table.models th { color: var(--muted); font-weight: 600; }
 .pill.idle { background: rgba(139, 147, 167, 0.18); color: var(--muted); }
 .pill.ps-only { background: rgba(76, 125, 255, 0.18); color: var(--accent); }
 .pill.src { background: rgba(139, 147, 167, 0.12); color: var(--muted); }
+
+/* --- V1 : actions de contrôle --- */
+
+.btn-action {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.25rem 0.6rem;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.btn-action.load { border-color: var(--accent); color: var(--accent); }
+.btn-action.unload { border-color: var(--muted); color: var(--muted); }
+.btn-action:hover { filter: brightness(1.25); }
+
+.actions-controls {
+  margin: 1.5rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.actions-controls h2,
+.actions-journal h2 { font-size: 1rem; margin: 0 0 0.6rem; }
+
+.actions-controls form {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.actions-controls select,
+.actions-controls input[type="text"] {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.actions-controls input[type="text"] { flex: 1; min-width: 12rem; }
+
+.actions-journal { margin-top: 1rem; }
+
+table.journal {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+table.journal th,
+table.journal td {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+table.journal th { color: var(--muted); font-weight: 600; }
+.journal .ts { color: var(--muted); white-space: nowrap; }
+.journal .detail { color: var(--text); }
+
+.pill.st-ok { background: rgba(47, 191, 113, 0.18); color: var(--ok); }
+.pill.st-error { background: rgba(229, 72, 77, 0.18); color: var(--down); }
+.pill.st-refused { background: rgba(229, 72, 77, 0.12); color: var(--down); }
+.pill.st-unsupported { background: rgba(139, 147, 167, 0.18); color: var(--muted); }
+
+.muted { color: var(--muted); }
