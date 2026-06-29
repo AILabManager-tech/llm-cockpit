@@ -22,6 +22,23 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+# Le gateway V4 sert toujours le modèle de base : « actif dans le registry » ne
+# signifie PAS « servi ». On l'expose explicitement pour ne pas tromper.
+_NOT_SERVED_NOTE = (
+    "Version active dans le registry seulement ; le gateway sert encore le "
+    "modèle de base (l'adapter n'est pas servi par /v1/chat/completions)."
+)
+_BASE_SERVED_NOTE = "Modèle de base réellement servi par le gateway."
+
+
+def _to_model_version(d: dict) -> ModelVersion:
+    if d["is_baseline"]:
+        status, note = "served_as_base", _BASE_SERVED_NOTE
+    else:
+        status, note = "not_served", _NOT_SERVED_NOTE
+    return ModelVersion(**d, serving_status=status, serving_note=note)
+
+
 def ensure_baseline(base_model: str) -> dict:
     """Garantit l'existence d'un baseline (actif) pour ce base_model."""
     baseline = store.get_baseline(base_model)
@@ -59,7 +76,7 @@ def attach_eval(version_id: int, eval_run_id: int) -> ModelVersion:
         raise RegistryError(f"version inconnue : {version_id}")
     rate = run_pass_rate(eval_run_id)
     store.set_version_eval(version_id, eval_run_id, rate)
-    return ModelVersion(**store.get_model_version(version_id))
+    return _to_model_version(store.get_model_version(version_id))
 
 
 def promote(version_id: int) -> ModelVersion:
@@ -82,7 +99,7 @@ def promote(version_id: int) -> ModelVersion:
         )
 
     store.set_active_version(version["base_model"], version_id)
-    return ModelVersion(**store.get_model_version(version_id))
+    return _to_model_version(store.get_model_version(version_id))
 
 
 def rollback(version_id: int) -> ModelVersion:
@@ -94,8 +111,8 @@ def rollback(version_id: int) -> ModelVersion:
     if baseline is None:
         raise RegistryError("aucun baseline à restaurer")
     store.set_active_version(version["base_model"], baseline["id"])
-    return ModelVersion(**store.get_model_version(baseline["id"]))
+    return _to_model_version(store.get_model_version(baseline["id"]))
 
 
 def list_versions() -> list[ModelVersion]:
-    return [ModelVersion(**v) for v in store.list_model_versions()]
+    return [_to_model_version(v) for v in store.list_model_versions()]
