@@ -96,3 +96,33 @@ def test_attach_eval_unknown_version(tmp_path, monkeypatch):
     _use_tmp(tmp_path, monkeypatch)
     with pytest.raises(RegistryError):
         registry.attach_eval(999, _eval_run(1, 1))
+
+
+def test_serving_status_is_honest(tmp_path, monkeypatch):
+    _use_tmp(tmp_path, monkeypatch)
+    vid = registry.register_candidate(
+        base_model=BASE, method="lora", adapter_path="/x", job_id=1
+    )
+    versions = {v.id: v for v in registry.list_versions()}
+    baseline = store.get_baseline(BASE)
+
+    # Le candidat n'est jamais présenté comme servi par le gateway.
+    assert versions[vid].serving_status == "not_served"
+    assert "pas servi" in versions[vid].serving_note
+    # Le baseline = le modèle réellement servi par le gateway.
+    assert versions[baseline["id"]].serving_status == "served_as_base"
+
+
+def test_promotion_does_not_make_candidate_served(tmp_path, monkeypatch):
+    _use_tmp(tmp_path, monkeypatch)
+    vid = registry.register_candidate(
+        base_model=BASE, method="lora", adapter_path="/x", job_id=1
+    )
+    baseline = store.get_baseline(BASE)
+    registry.attach_eval(baseline["id"], _eval_run(5, 10))
+    registry.attach_eval(vid, _eval_run(9, 10))
+
+    promoted = registry.promote(vid)
+    # Actif dans le registry, MAIS toujours "not_served".
+    assert promoted.active is True
+    assert promoted.serving_status == "not_served"

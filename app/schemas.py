@@ -353,10 +353,14 @@ class ModelVersion(BaseModel):
     adapter_path: str | None = None
     status: str            # "baseline" | "candidate"
     is_baseline: bool = False
-    active: bool = False
+    active: bool = False    # actif DANS LE REGISTRY ≠ servi par le gateway
     eval_run_id: int | None = None
     pass_rate: float | None = None
     job_id: int | None = None
+    # V8 : état de serving explicite (anti-trompeur).
+    # "served_as_base" (baseline = modèle réellement servi) | "not_served".
+    serving_status: str = "not_served"
+    serving_note: str = ""
 
 
 # Corps de requête V8.

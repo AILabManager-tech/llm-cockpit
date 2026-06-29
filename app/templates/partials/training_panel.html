@@ -83,9 +83,14 @@
 
   {% if versions %}
   <h4>Versions de modèle</h4>
+  <p class="poll-note">
+    « Actif » = sélection dans le registry, <strong>pas</strong> ce que sert le
+    gateway. En V8, le gateway sert toujours le modèle de base ; l'adapter promu
+    n'est pas servi par <code>/v1/chat/completions</code>.
+  </p>
   <table class="train-table">
     <thead>
-      <tr><th>#</th><th>Base</th><th>Type</th><th>Actif</th><th>Pass-rate</th><th>Éval</th><th></th></tr>
+      <tr><th>#</th><th>Base</th><th>Type</th><th>Actif (registry)</th><th>Serving</th><th>Pass-rate</th><th>Éval</th><th></th></tr>
     </thead>
     <tbody>
       {% for v in versions %}
@@ -94,6 +99,13 @@
         <td class="model-name">{{ v.base_model }}</td>
         <td>{{ "baseline" if v.is_baseline else (v.method or "candidate") }}</td>
         <td>{% if v.active %}<span class="pill st-ok">actif</span>{% else %}—{% endif %}</td>
+        <td>
+          {% if v.serving_status == "served_as_base" %}
+            <span class="pill st-ok" title="{{ v.serving_note }}">servi (base)</span>
+          {% else %}
+            <span class="pill st-unsupported" title="{{ v.serving_note }}">non servi</span>
+          {% endif %}
+        </td>
         <td>{{ "%.3f"|format(v.pass_rate) if v.pass_rate is not none else "—" }}</td>
         <td>{{ v.eval_run_id if v.eval_run_id is not none else "—" }}</td>
         <td>
@@ -101,8 +113,9 @@
           <button class="btn-action load"
                   hx-post="/api/models/promote" hx-ext="json-enc"
                   hx-vals='{"version_id": {{ v.id }}}' hx-swap="none"
-                  hx-on::after-request="htmx.trigger('#training-panel','refresh')">
-            Promouvoir
+                  hx-on::after-request="htmx.trigger('#training-panel','refresh')"
+                  title="Marque la version active dans le registry (ne la sert pas).">
+            Promouvoir (registry)
           </button>
           <button class="btn-action unload"
                   hx-post="/api/models/rollback" hx-ext="json-enc"

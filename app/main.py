@@ -683,7 +683,8 @@ def _training_context() -> dict:
     return {
         "datasets": store.list_datasets(),
         "jobs": store.list_train_jobs(),
-        "versions": store.list_model_versions(),
+        # Versions enrichies du serving_status (anti-trompeur).
+        "versions": model_registry.list_versions(),
         "runner_configured": bool(config.TRAIN_RUNNER),
         "base_model": config.TRAIN_BASE_MODEL,
     }

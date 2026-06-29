@@ -670,6 +670,23 @@ cas de succès, le job enregistre un `ModelVersion` (candidat) pointant vers
 `data/adapters/job_<id>/`. La comparaison adapté vs baseline réutilise une suite
 V6 ; on **attache** le `eval_run` à chaque version, puis on promeut/rollback.
 
+## Serving : « promu » ≠ « servi » (important)
+
+**V8 ne sert pas automatiquement l'adapter.** La promotion est une décision de
+**registry** (sélection/versionnage + preuve) ; elle ne modifie pas ce que sert
+le gateway. En V8, `/v1/chat/completions` continue de servir le **modèle de
+base**. Pour ne pas tromper, chaque `ModelVersion` expose explicitement :
+
+- `active` : sélectionné **dans le registry** (bookkeeping), **pas** « servi » ;
+- `serving_status` : `"served_as_base"` pour le baseline (le modèle réellement
+  servi par le gateway) ou `"not_served"` pour tout candidat adapté ;
+- `serving_note` : phrase explicite (« …le gateway sert encore le modèle de
+  base, l'adapter n'est pas servi par `/v1/chat/completions` »).
+
+L'UI affiche une colonne **Serving** distincte de **Actif (registry)** et le
+bouton est libellé « Promouvoir (registry) ». Servir réellement un adapter
+(export GGUF + import Ollama, ou serveur dédié) est hors périmètre V8.
+
 ## Nouveaux endpoints V8
 
 | Méthode / route                       | Corps / effet                              |
