@@ -1,11 +1,12 @@
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app import config
+from app.db import store
 from app.gateway.openai import router as gateway_router
 from app.providers.ollama import OllamaAdapter
 from app.schemas import (
@@ -18,13 +19,15 @@ from app.schemas import (
     ProviderRegisterRequest,
     ProviderStatus,
     RegistryDrift,
+    RequestLog,
     RoleAssignment,
     RoleAssignRequest,
     RoleTestRequest,
     RouteDecision,
+    StatsSummary,
     TestRequest,
 )
-from app.services import action_log
+from app.services import action_log, stats
 from app.services.actions import ActionService
 from app.services.inventory import InventoryService
 from app.services.registry import (
@@ -249,6 +252,27 @@ async def api_routes() -> list[RouteDecision]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+# --- V5 : observabilité (logs gateway + stats) --------------------------
+
+
+@app.get("/api/logs", response_model=list[RequestLog])
+async def api_logs(
+    limit: int = 100,
+    model: str | None = None,
+    provider: str | None = None,
+    app_filter: str | None = Query(None, alias="app"),
+    status: str | None = None,
+) -> list[RequestLog]:
+    return store.query_logs(
+        limit=limit, model=model, provider=provider, app=app_filter, status=status
+    )
+
+
+@app.get("/api/stats", response_model=StatsSummary)
+async def api_stats(window: int | None = None) -> StatsSummary:
+    return stats.compute_stats(window_seconds=window)
+
+
 # --- HTML (HTMX) --------------------------------------------------------
 
 
@@ -374,6 +398,33 @@ async def partials_gateway(request: Request) -> HTMLResponse:
             "routes": routes,
             "gateway_error": gateway_error,
             "gateway_enabled": config.GATEWAY_ENABLED,
+        },
+    )
+
+
+# --- V5 : dashboard d'observabilité -------------------------------------
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "dashboard.html",
+        {
+            "summary": stats.compute_stats(),
+            "logs": store.query_logs(limit=50),
+        },
+    )
+
+
+@app.get("/partials/dashboard", response_class=HTMLResponse)
+async def partials_dashboard(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "partials/dashboard.html",
+        {
+            "summary": stats.compute_stats(),
+            "logs": store.query_logs(limit=50),
         },
     )
 

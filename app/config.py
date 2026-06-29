@@ -23,3 +23,9 @@ PROVIDERS_CONFIG_PATH = os.getenv(
 # --- V4 : gateway OpenAI-compatible (local uniquement) ------------------
 GATEWAY_ENABLED = os.getenv("GATEWAY_ENABLED", "1") not in {"0", "false", "False"}
 GATEWAY_DEFAULT_ROLE = os.getenv("GATEWAY_DEFAULT_ROLE", "chat")
+
+# --- V5 : observabilité gateway (SQLite local) --------------------------
+DB_PATH = os.getenv("DB_PATH", os.path.join(DATA_DIR, "cockpit.db"))
+# Par défaut on NE stocke PAS le contenu des prompts (PII).
+LOG_PROMPTS = os.getenv("LOG_PROMPTS", "0") not in {"0", "false", "False"}
+LOG_PROMPT_MAX_CHARS = int(os.getenv("LOG_PROMPT_MAX_CHARS", "500"))

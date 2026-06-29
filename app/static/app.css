@@ -320,3 +320,57 @@ table.routes-table td {
 }
 
 table.routes-table th { color: var(--muted); font-weight: 600; }
+
+/* --- V5 : dashboard --- */
+
+.topnav { margin-top: 0.5rem; display: flex; gap: 1rem; }
+.topnav a { color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+.topnav a:hover { text-decoration: underline; }
+
+.stat-cards {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.2rem;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 8rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.stat-value { font-size: 1.6rem; font-weight: 700; }
+.stat-label { color: var(--muted); font-size: 0.75rem; }
+
+.stat-breakdowns {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.2rem;
+}
+
+.breakdown {
+  flex: 1;
+  min-width: 14rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.breakdown h3 { font-size: 0.85rem; margin: 0 0 0.5rem; color: var(--muted); }
+
+table.breakdown-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+table.breakdown-table td {
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard h3 { font-size: 0.9rem; margin: 1rem 0 0.5rem; }
