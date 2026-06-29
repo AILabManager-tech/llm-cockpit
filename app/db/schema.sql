@@ -56,3 +56,27 @@ CREATE TABLE IF NOT EXISTS eval_result (
 
 CREATE INDEX IF NOT EXISTS idx_eval_result_run ON eval_result(run_id);
 CREATE INDEX IF NOT EXISTS idx_eval_result_role_model ON eval_result(role, model);
+
+-- V7 : RAG local. Store vectoriel local (embeddings JSON, cosinus en Python ;
+-- aucune base vectorielle serveur). Documents ingérés depuis data/rag/docs.
+
+CREATE TABLE IF NOT EXISTS rag_document (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts          TEXT    NOT NULL,
+    path        TEXT    NOT NULL,
+    name        TEXT    NOT NULL,
+    chunks      INTEGER NOT NULL,
+    embed_model TEXT    NOT NULL,
+    dim         INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS rag_chunk (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    doc_id    INTEGER NOT NULL,
+    ordinal   INTEGER NOT NULL,
+    text      TEXT    NOT NULL,
+    embedding TEXT    NOT NULL,    -- JSON array de floats
+    FOREIGN KEY (doc_id) REFERENCES rag_document(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_rag_chunk_doc ON rag_chunk(doc_id);

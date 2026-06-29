@@ -66,6 +66,12 @@ class EvalRunner:
 
     async def run(self, suite_name: str, models: list[str]) -> EvalRunSummary:
         suite = load_suite(suite_name)               # SuiteError/ValidationError
+        return await self.run_loaded(suite, suite_name, models)
+
+    async def run_loaded(
+        self, suite: dict, suite_name: str, models: list[str]
+    ) -> EvalRunSummary:
+        """Joue une suite déjà chargée (permet l'injection RAG en V7)."""
         if not models:
             raise EvalValidationError("aucun modèle fourni")
         role = suite.get("role")

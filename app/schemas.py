@@ -254,6 +254,13 @@ class ScoreboardRow(BaseModel):
     errors: int
 
 
+def _csv_to_list(value):
+    # Accepte une liste OU une chaîne "a, b" (pratique pour l'UI HTMX).
+    if isinstance(value, str):
+        return [m.strip() for m in value.split(",") if m.strip()]
+    return value
+
+
 class EvalRunRequest(BaseModel):
     suite: str
     models: list[str]
@@ -261,7 +268,54 @@ class EvalRunRequest(BaseModel):
     @field_validator("models", mode="before")
     @classmethod
     def _split_csv(cls, value):
-        # Accepte une liste OU une chaîne "a, b" (pratique pour l'UI HTMX).
-        if isinstance(value, str):
-            return [m.strip() for m in value.split(",") if m.strip()]
-        return value
+        return _csv_to_list(value)
+
+
+# --- V7 : RAG local mesuré ----------------------------------------------
+
+
+class RagDocument(BaseModel):
+    id: int
+    ts: str
+    path: str
+    name: str
+    chunks: int
+    embed_model: str
+    dim: int | None = None
+
+
+class RagSource(BaseModel):
+    doc_id: int
+    doc_name: str
+    ordinal: int
+    score: float
+    preview: str
+
+
+class RagAnswer(BaseModel):
+    query: str
+    answer: str
+    used_rag: bool
+    model: str | None = None
+    sources: list[RagSource] = []
+    error: str | None = None
+
+
+class RagIngestRequest(BaseModel):
+    path: str
+
+
+class RagQueryRequest(BaseModel):
+    query: str
+    role: str | None = None
+
+
+class RagEvalRequest(BaseModel):
+    suite: str
+    with_rag: bool = True
+    models: list[str]
+
+    @field_validator("models", mode="before")
+    @classmethod
+    def _split_csv(cls, value):
+        return _csv_to_list(value)

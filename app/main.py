@@ -16,6 +16,11 @@ from app.evals.runner import (
 )
 from app.gateway.openai import router as gateway_router
 from app.providers.ollama import OllamaAdapter
+from app.rag import eval_bridge
+from app.rag import query as rag_query
+from app.rag import store as rag_store
+from app.rag.embed import EmbeddingError, EmbeddingModelMissing
+from app.rag.ingest import IngestError, ingest_document
 from app.schemas import (
     ActionLogEntry,
     ActionRequest,
@@ -27,6 +32,11 @@ from app.schemas import (
     ProviderHealth,
     ProviderRegisterRequest,
     ProviderStatus,
+    RagAnswer,
+    RagDocument,
+    RagEvalRequest,
+    RagIngestRequest,
+    RagQueryRequest,
     RegistryDrift,
     RequestLog,
     RoleAssignment,
@@ -318,6 +328,57 @@ async def api_scoreboard(role: str | None = None) -> list[ScoreboardRow]:
     return scoreboard_service.compute_scoreboard(role=role)
 
 
+# --- V7 : RAG local mesuré ----------------------------------------------
+
+
+@app.post("/api/rag/ingest", response_model=RagDocument)
+async def api_rag_ingest(payload: RagIngestRequest) -> RagDocument:
+    try:
+        return await ingest_document(payload.path)
+    except IngestError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except EmbeddingModelMissing as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except EmbeddingError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.get("/api/rag/documents", response_model=list[RagDocument])
+async def api_rag_documents() -> list[RagDocument]:
+    return rag_store.list_documents()
+
+
+@app.delete("/api/rag/documents/{doc_id}")
+async def api_rag_delete(doc_id: int) -> dict:
+    if not rag_store.delete_document(doc_id):
+        raise HTTPException(status_code=404, detail=f"document inconnu : {doc_id}")
+    return {"removed": doc_id}
+
+
+@app.post("/api/rag/query", response_model=RagAnswer)
+async def api_rag_query(payload: RagQueryRequest) -> RagAnswer:
+    try:
+        return await rag_query.answer(payload.query, role=payload.role)
+    except EmbeddingModelMissing as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except EmbeddingError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/api/rag/eval", response_model=EvalRunSummary)
+async def api_rag_eval(payload: RagEvalRequest) -> EvalRunSummary:
+    try:
+        return await eval_bridge.run_eval(
+            get_eval_runner(), payload.suite, payload.with_rag, payload.models
+        )
+    except (SuiteError, EvalValidationError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except EmbeddingModelMissing as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except EmbeddingError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
 # --- HTML (HTMX) --------------------------------------------------------
 
 
@@ -458,6 +519,13 @@ async def dashboard(request: Request) -> HTMLResponse:
         {
             "summary": stats.compute_stats(),
             "logs": store.query_logs(limit=50),
+            # Contexte des panneaux inclus en ligne (scoreboard V6, RAG V7).
+            "scoreboard": scoreboard_service.compute_scoreboard(),
+            "runs": store.query_eval_runs(limit=10),
+            "suites": list_suites(),
+            "documents": rag_store.list_documents(),
+            "embed_model": config.RAG_EMBED_MODEL,
+            "answer": None,
         },
     )
 
@@ -484,6 +552,36 @@ async def partials_scoreboard(request: Request) -> HTMLResponse:
             "runs": store.query_eval_runs(limit=10),
             "suites": list_suites(),
         },
+    )
+
+
+@app.get("/partials/rag", response_class=HTMLResponse)
+async def partials_rag(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "partials/rag_panel.html",
+        {
+            "documents": rag_store.list_documents(),
+            "embed_model": config.RAG_EMBED_MODEL,
+            "answer": None,
+        },
+    )
+
+
+@app.post("/partials/rag/query", response_class=HTMLResponse)
+async def partials_rag_query(
+    request: Request, payload: RagQueryRequest
+) -> HTMLResponse:
+    answer: RagAnswer | None = None
+    error: str | None = None
+    try:
+        answer = await rag_query.answer(payload.query, role=payload.role)
+    except (EmbeddingModelMissing, EmbeddingError) as exc:
+        error = str(exc)
+    return templates.TemplateResponse(
+        request,
+        "partials/rag_answer.html",
+        {"answer": answer, "error": error},
     )
 
 

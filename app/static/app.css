@@ -423,3 +423,68 @@ table.scoreboard-table td {
 }
 
 table.scoreboard-table th { color: var(--muted); font-weight: 600; }
+
+/* --- V7 : RAG --- */
+
+.rag {
+  margin: 1.5rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.rag h3 { font-size: 0.95rem; margin: 0 0 0.6rem; }
+.rag h4 { font-size: 0.82rem; margin: 1rem 0 0.5rem; color: var(--muted); }
+
+.rag-ingest-form,
+.rag-query-form {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.rag-ingest-form input,
+.rag-query-form input {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.rag-ingest-form input[name="path"],
+.rag-query-form input[name="query"] { flex: 1; min-width: 16rem; }
+
+table.rag-docs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-top: 0.6rem;
+}
+
+table.rag-docs-table th,
+table.rag-docs-table td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+table.rag-docs-table th { color: var(--muted); font-weight: 600; }
+
+.rag-answer {
+  margin-top: 0.8rem;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.rag-answer-text { white-space: pre-wrap; }
+.rag-sources { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+.rag-sources li { margin-bottom: 0.5rem; }
+.rag-source-preview { color: var(--muted); font-size: 0.78rem; margin-top: 0.2rem; }

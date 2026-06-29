@@ -1,0 +1,28 @@
+{% if error %}
+  <p class="empty-state error">{{ error }}</p>
+{% elif answer %}
+  <div class="rag-answer">
+    {% if answer.error %}
+      <p class="empty-state error">Génération impossible : {{ answer.error }}</p>
+    {% else %}
+      <p class="rag-answer-text">{{ answer.answer }}</p>
+    {% endif %}
+    {% if answer.model %}
+      <p class="poll-note">Modèle : {{ answer.model }}</p>
+    {% endif %}
+    {% if answer.sources %}
+      <h4>Sources</h4>
+      <ul class="rag-sources">
+        {% for s in answer.sources %}
+        <li>
+          <strong>{{ s.doc_name }}#{{ s.ordinal }}</strong>
+          <span class="poll-note">score {{ "%.3f"|format(s.score) }}</span>
+          <div class="rag-source-preview">{{ s.preview }}</div>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="poll-note">Aucune source locale citée.</p>
+    {% endif %}
+  </div>
+{% endif %}
