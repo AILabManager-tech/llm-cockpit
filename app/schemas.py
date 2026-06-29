@@ -90,3 +90,49 @@ class RoleAssignRequest(BaseModel):
 
 class RoleTestRequest(BaseModel):
     prompt: str | None = None
+
+
+# --- V3 : registry multi-provider ---------------------------------------
+
+
+class ProviderConfig(BaseModel):
+    id: str
+    kind: str                # "ollama" | "openai_compat"
+    base_url: str
+    enabled: bool = True
+
+
+class ProviderCapabilities(BaseModel):
+    list_installed: bool = False
+    list_loaded: bool = False
+    load: bool = False
+    unload: bool = False
+    generate: bool = False
+
+
+class ProviderStatus(BaseModel):
+    id: str
+    kind: str
+    base_url: str
+    enabled: bool
+    reachable: bool
+    error: str | None = None
+    capabilities: ProviderCapabilities
+    model_count: int = 0
+
+
+class RegistryDrift(BaseModel):
+    provider_id: str
+    base_url: str
+    enabled: bool
+    reachable: bool
+    drift: bool
+    detail: str | None = None
+
+
+# Corps de requête de l'enregistrement d'un provider (HTTP body).
+class ProviderRegisterRequest(BaseModel):
+    id: str
+    kind: str
+    base_url: str
+    enabled: bool = True

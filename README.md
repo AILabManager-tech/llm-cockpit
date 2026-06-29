@@ -259,6 +259,88 @@ données. `data/` est gitignored. Forme :
 
 ---
 
+# LLM Cockpit — V3 (registry multi-provider)
+
+V3 centralise plusieurs **providers** derrière un registry local et agrège leur
+inventaire, sans casser le cœur. Un deuxième type d'adapter (**OpenAI-compatible**,
+LM Studio / llama.cpp server / etc.) rejoint Ollama. V0, V1 et V2 restent
+fonctionnels.
+
+```text
+V3 centralise plusieurs providers mais n'expose pas encore de gateway.
+V3 n'invente jamais un provider ou un modèle non détecté.
+V3 ne supporte load/unload que là où le provider le permet (Ollama).
+V3 n'introduit aucune base de données (registry en JSON local).
+```
+
+## Objectif V3
+
+- **Registry** local de providers (`id`, `kind`, `base_url`, `enabled`).
+- Ajouter / retirer un provider ; Ollama reste le provider **par défaut**.
+- **Adapter OpenAI-compatible** minimal (`/v1/models`, `/v1/chat/completions`),
+  en HTTP brut (pas le SDK `openai`).
+- Inventaire **agrégé multi-provider** : `/api/models` concatène les providers
+  activés, chaque `ModelInfo` portant son `provider`. Forme `list[ModelInfo]`
+  inchangée.
+- État de chaque provider (joignable, capacités, nombre de modèles).
+- **Détection de drift** registry ↔ réalité.
+
+## Kinds d'adapter & capacités
+
+| Kind            | `list_installed` | `list_loaded` | `load`/`unload` | `generate` |
+|-----------------|:----------------:|:-------------:|:---------------:|:----------:|
+| `ollama`        | ✅ | ✅ | ✅ | ✅ (`/api/generate`) |
+| `openai_compat` | ✅ (`/v1/models`) | ❌ | ❌ → `unsupported` | ✅ (`/v1/chat/completions`) |
+
+`load`/`unload` hors Ollama renvoient `ActionResult(status="unsupported")`,
+jamais une exception. Les contrôles V1 et les rôles V2 restent **scopés Ollama**.
+
+## Détection de drift
+
+Le drift compare l'état **déclaré** dans le registry à la **réalité** observée :
+
+- déclaré actif (`enabled`) mais **injoignable** → drift ;
+- déclaré désactivé mais **répond quand même** → drift (présent inattendu).
+
+Exposé via `GET /api/registry/drift`, jamais masqué. Un provider injoignable est
+isolé : il contribue `[]` à l'agrégat sans casser les autres.
+
+## Nouveaux endpoints V3
+
+| Méthode / route            | Corps                          | Réponse / effet                         |
+|----------------------------|--------------------------------|-----------------------------------------|
+| `GET    /api/providers`    | —                              | `list[ProviderStatus]`                  |
+| `POST   /api/providers`    | `{id, kind, base_url, enabled?}` | `ProviderConfig` (**201**)            |
+| `DELETE /api/providers/{id}` | —                            | `{removed: id}`                         |
+| `GET    /api/registry/drift` | —                            | `list[RegistryDrift]`                   |
+| `GET    /partials/providers` | —                            | Fragment HTMX du panneau Providers      |
+
+`/api/models` (V0) renvoie désormais l'inventaire **agrégé**. Codes : kind
+inconnu → **400** ; `id`/`base_url` dupliqué → **409** ; provider absent
+(DELETE) → **404** ; `providers.json` corrompu → **400** clair, jamais écrasé.
+
+## Persistance `data/providers.json`
+
+JSON local, **écriture atomique** (`tmp` + `os.replace`), gitignored. Absent →
+un seul provider Ollama par défaut (depuis `OLLAMA_BASE_URL`), jamais d'invention
+d'un second provider.
+
+```json
+{
+  "providers": [
+    {"id": "ollama", "kind": "ollama", "base_url": "http://127.0.0.1:11434", "enabled": true}
+  ]
+}
+```
+
+## Variable d'environnement V3
+
+| Variable                | Défaut                 | Rôle                          |
+|-------------------------|------------------------|-------------------------------|
+| `PROVIDERS_CONFIG_PATH` | `data/providers.json`  | Emplacement du registry local |
+
+---
+
 ## Tests
 
 ```bash
@@ -267,7 +349,8 @@ uv run pytest
 ```
 
 Les mocks interceptent le **transport HTTP brut** (`/api/tags`, `/api/ps`,
-`/api/generate`) : on teste le parsing réel de `OllamaAdapter`, la conversion
-ns→ms, la vraie logique de validation/journal, et la persistance JSON réelle des
-rôles — jamais un mock d'interface. Aucun test ne dépend d'un Ollama local en
-cours d'exécution.
+`/api/generate`, `/v1/models`, `/v1/chat/completions`) : on teste le parsing réel
+des adapters `OllamaAdapter` et `OpenAICompatAdapter`, la conversion ns→ms, la
+logique de validation/journal, la persistance JSON réelle des rôles, et
+l'agrégation/drift du registry — jamais un mock d'interface. Aucun test ne dépend
+d'un provider local en cours d'exécution.

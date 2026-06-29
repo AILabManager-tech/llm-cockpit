@@ -5,6 +5,7 @@ from app.schemas import (
     GenerateRequest,
     GenerateResult,
     ModelInfo,
+    ProviderCapabilities,
     ProviderHealth,
 )
 
@@ -29,3 +30,8 @@ class ProviderAdapter(ABC):
 
     @abstractmethod
     async def generate(self, req: GenerateRequest) -> GenerateResult: ...
+
+    # --- V3 : capacités déclaratives (sync) -----------------------------
+
+    @abstractmethod
+    def capabilities(self) -> ProviderCapabilities: ...
