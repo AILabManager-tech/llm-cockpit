@@ -1,0 +1,1879 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jumeau formatif — LLM Cockpit V8</title>
+  <style>
+    :root {
+      --bg: #0b0f15;
+      --bg-2: #101621;
+      --panel: #151d29;
+      --panel-2: #182232;
+      --line: rgba(179, 194, 214, 0.14);
+      --line-2: rgba(179, 194, 214, 0.22);
+      --text: #e9eef7;
+      --muted: #97a7bd;
+      --accent: #6da8ff;
+      --accent-2: #8e7dff;
+      --good: #69d18c;
+      --warn: #ffbf73;
+      --danger: #ff7575;
+      --shadow: 0 22px 60px rgba(0, 0, 0, 0.42);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+      --sans: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(109, 168, 255, 0.15), transparent 28%),
+        radial-gradient(circle at 88% 10%, rgba(142, 125, 255, 0.13), transparent 26%),
+        linear-gradient(180deg, #090d12 0%, #0c1118 56%, #07090d 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 72px 72px;
+      opacity: 0.18;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.65), transparent 92%);
+    }
+
+    .page {
+      width: min(1540px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 18px 0 28px;
+    }
+
+    .top {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.7fr);
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(23, 31, 44, 0.98), rgba(14, 19, 27, 0.98));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    .hero {
+      padding: 20px 22px 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(28px, 3vw, 42px);
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      max-width: 72ch;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(109, 168, 255, 0.18);
+      background: rgba(109, 168, 255, 0.08);
+      color: #d8e8ff;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .badge strong { color: #fff; }
+
+    .progress {
+      padding: 18px 18px 16px;
+    }
+
+    .progress-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .progress-count {
+      font-size: 18px;
+      font-weight: 750;
+    }
+
+    .progress-name {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .bar {
+      height: 12px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--line);
+    }
+
+    .bar > span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 220ms ease;
+      box-shadow: 0 0 22px rgba(109, 168, 255, 0.28);
+    }
+
+    .progress-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding: 12px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .nav-btn {
+      appearance: none;
+      border: 1px solid var(--line-2);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 9px 13px;
+      font: inherit;
+      cursor: pointer;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .nav-btn:hover, .nav-btn:focus-visible {
+      transform: translateY(-1px);
+      border-color: rgba(109, 168, 255, 0.38);
+      outline: none;
+    }
+
+    .nav-btn.active {
+      background: linear-gradient(180deg, rgba(109, 168, 255, 0.22), rgba(142, 125, 255, 0.12));
+      border-color: rgba(109, 168, 255, 0.42);
+      color: #fff;
+    }
+
+    .legend {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1.62fr) minmax(330px, 0.78fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .scene-shell {
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .scene-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+
+    .scene-title {
+      font-weight: 700;
+    }
+
+    .demo-note {
+      color: #d7e6fb;
+      font-size: 12px;
+    }
+
+    .cockpit {
+      position: relative;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid var(--line-2);
+      background: linear-gradient(180deg, rgba(18, 25, 35, 0.98), rgba(14, 20, 29, 0.98));
+      min-height: 920px;
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .cockpit.scene-switch {
+      opacity: 0.56;
+      transform: scale(0.992);
+    }
+
+    .cockpit::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 8% 4%, rgba(109, 168, 255, 0.08), transparent 16%),
+        radial-gradient(circle at 88% 10%, rgba(142, 125, 255, 0.07), transparent 18%);
+    }
+
+    .topbar {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
+    }
+
+    .topbar h2 {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .version {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(109, 168, 255, 0.2);
+      color: #fff;
+      border: 1px solid rgba(109, 168, 255, 0.28);
+      vertical-align: middle;
+    }
+
+    .subtitle-line {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .topnav {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .topnav button {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      padding: 8px 11px;
+      border-radius: 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .topnav button.active {
+      background: linear-gradient(180deg, rgba(109, 168, 255, 0.22), rgba(142, 125, 255, 0.1));
+      border-color: rgba(109, 168, 255, 0.42);
+    }
+
+    .view {
+      display: none;
+      position: relative;
+      padding: 16px 18px 20px;
+      font-family: var(--mono);
+    }
+
+    .view.active { display: block; }
+
+    .cards {
+      display: grid;
+      gap: 14px;
+    }
+
+    .section {
+      padding: 14px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      font-family: var(--mono);
+      letter-spacing: -0.02em;
+    }
+
+    .poll-note {
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0;
+    }
+
+    .provider-status {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--good);
+      box-shadow: 0 0 0 4px rgba(105, 209, 140, 0.14);
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .pill.ok { color: var(--good); border-color: rgba(105, 209, 140, 0.32); background: rgba(105, 209, 140, 0.10); }
+    .pill.warn { color: var(--warn); border-color: rgba(255, 191, 115, 0.32); background: rgba(255, 191, 115, 0.10); }
+    .pill.bad { color: var(--danger); border-color: rgba(255, 117, 117, 0.32); background: rgba(255, 117, 117, 0.09); }
+    .pill.muted { color: var(--muted); }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 8px 7px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(0,0,0,0.08);
+    }
+
+    .model-name, .role-name, .ts { white-space: nowrap; font-weight: 700; }
+    .dim, .muted { color: var(--muted); }
+
+    .actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      align-items: center;
+    }
+
+    .action-btn {
+      border: 1px solid rgba(255,255,255,0.09);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      border-radius: 9px;
+      padding: 8px 10px;
+      font: inherit;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .action-btn.primary {
+      border-color: rgba(109, 168, 255, 0.32);
+      color: #d8e8ff;
+      background: rgba(109, 168, 255, 0.10);
+    }
+
+    .action-btn.success {
+      border-color: rgba(105, 209, 140, 0.28);
+      color: #daf8e2;
+      background: rgba(105, 209, 140, 0.10);
+    }
+
+    .actions-box {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mini-input {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 10px;
+      font: inherit;
+      font-size: 12px;
+    }
+
+    .log-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .stat-card {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .stat-value {
+      display: block;
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 6px;
+      letter-spacing: -0.04em;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .breakdown-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .small-card {
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .small-card h4, .drawer h4 { margin: 0 0 8px; font-size: 13px; }
+
+    .scoreboard-table td:nth-child(3), .scoreboard-table td:nth-child(7), .scoreboard-table td:nth-child(8) {
+      white-space: nowrap;
+    }
+
+    .rag-panels, .train-panels {
+      display: grid;
+      gap: 12px;
+    }
+
+    .notice {
+      border-left: 3px solid var(--accent);
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(109, 168, 255, 0.08);
+      color: #d8e8ff;
+      font-size: 12px;
+    }
+
+    .light-rail {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .thumb {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .thumb img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 7;
+      object-fit: cover;
+      filter: saturate(0.82) contrast(0.95);
+    }
+
+    .thumb span {
+      display: block;
+      padding: 7px 8px 8px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .spotlight {
+      position: absolute;
+      z-index: 1;
+      border-radius: 18px;
+      border: 1px solid rgba(109, 168, 255, 0.42);
+      box-shadow:
+        0 0 0 9999px rgba(0,0,0,0.18),
+        0 0 0 1px rgba(255,255,255,0.05) inset,
+        0 0 44px rgba(109, 168, 255, 0.16);
+      background: linear-gradient(180deg, rgba(109, 168, 255, 0.08), rgba(142, 125, 255, 0.04));
+      transition: all 220ms ease;
+    }
+
+    .marker {
+      position: absolute;
+      z-index: 2;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: linear-gradient(180deg, rgba(109,168,255,0.95), rgba(142,125,255,0.88));
+      color: #fff;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      pointer-events: auto;
+      box-shadow: 0 0 0 5px rgba(109,168,255,0.11), 0 18px 36px rgba(0,0,0,0.3);
+      animation: pulse 2.2s ease-in-out infinite;
+      transition: transform 160ms ease, filter 160ms ease, opacity 160ms ease;
+    }
+
+    .marker:hover, .marker:focus-visible {
+      transform: scale(1.08);
+      filter: brightness(1.05);
+      outline: none;
+    }
+
+    .marker.done {
+      background: linear-gradient(180deg, rgba(105, 209, 140, 0.95), rgba(89, 188, 124, 0.9));
+      box-shadow: 0 0 0 5px rgba(105, 209, 140, 0.12), 0 18px 36px rgba(0,0,0,0.28);
+    }
+
+    .marker.current {
+      transform: scale(1.12);
+      box-shadow:
+        0 0 0 7px rgba(109,168,255,0.16),
+        0 20px 40px rgba(0,0,0,0.36);
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    .bubble {
+      position: absolute;
+      z-index: 3;
+      width: min(380px, 45vw);
+      pointer-events: auto;
+      background: rgba(12, 17, 24, 0.95);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 14px 14px 12px;
+      box-shadow: 0 24px 58px rgba(0,0,0,0.42);
+      opacity: 0;
+      transform: translateY(10px) scale(0.985);
+      transition: opacity 180ms ease, transform 180ms ease;
+      backdrop-filter: blur(12px);
+    }
+
+    .bubble.open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .bubble h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      letter-spacing: -0.02em;
+    }
+
+    .bubble .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(109, 168, 255, 0.22);
+      background: rgba(109, 168, 255, 0.10);
+      color: #d8e8ff;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .bubble p {
+      margin: 0 0 8px;
+      color: #dfe7f4;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .bubble .small {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .bubble .bubble-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .bubble button {
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .bubble button.primary {
+      border-color: rgba(109, 168, 255, 0.34);
+      background: rgba(109, 168, 255, 0.12);
+    }
+
+    .bubble button.good {
+      border-color: rgba(105, 209, 140, 0.32);
+      background: rgba(105, 209, 140, 0.10);
+    }
+
+    .focus-panel {
+      padding: 16px;
+      position: sticky;
+      top: 14px;
+    }
+
+    .focus-head {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      margin-bottom: 12px;
+    }
+
+    .focus-kicker {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .focus-title {
+      margin: 0 0 8px;
+      font-family: var(--mono);
+      font-size: 20px;
+      line-height: 1.1;
+    }
+
+    .focus-text {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .focus-meta {
+      display: grid;
+      gap: 10px;
+    }
+
+    .meta-box {
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .meta-box h4 {
+      margin: 0 0 6px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #d7e4f7;
+    }
+
+    .meta-box p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .step-controls {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .step-controls button {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 10px;
+      font: inherit;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .step-controls button.primary {
+      border-color: rgba(109, 168, 255, 0.32);
+      background: rgba(109, 168, 255, 0.12);
+    }
+
+    .step-controls button.good {
+      border-color: rgba(105, 209, 140, 0.30);
+      background: rgba(105, 209, 140, 0.11);
+    }
+
+    .checklist {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .checklist h3, .drawer summary {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-family: var(--mono);
+    }
+
+    .checklist-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 11px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .check-box {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      border: 1px solid rgba(179, 194, 214, 0.24);
+      background: rgba(255,255,255,0.03);
+      flex: 0 0 auto;
+      position: relative;
+      margin-top: 1px;
+    }
+
+    .check-item.done {
+      border-color: rgba(105, 209, 140, 0.28);
+      background: rgba(105, 209, 140, 0.08);
+    }
+
+    .check-item.done .check-box {
+      border-color: rgba(105, 209, 140, 0.50);
+      background: rgba(105, 209, 140, 0.16);
+    }
+
+    .check-item.done .check-box::after {
+      content: "";
+      position: absolute;
+      inset: 3px 5px 5px 3px;
+      border-right: 2px solid var(--good);
+      border-bottom: 2px solid var(--good);
+      transform: rotate(40deg);
+    }
+
+    .check-item small {
+      display: block;
+      color: var(--muted);
+      margin-top: 2px;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+    .drawer {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .drawer summary {
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .drawer summary::-webkit-details-marker { display: none; }
+
+    .cmd {
+      margin: 10px 0 0;
+      padding: 12px;
+      border-radius: 12px;
+      background: rgba(0,0,0,0.24);
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow: auto;
+      color: #edf4ff;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .proof-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .proof {
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      overflow: hidden;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .proof img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 8;
+      object-fit: cover;
+      filter: saturate(0.9) contrast(0.98);
+    }
+
+    .proof span {
+      display: block;
+      padding: 7px 8px 8px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .hidden { display: none !important; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 1180px) {
+      .top, .workspace { grid-template-columns: 1fr; }
+      .focus-panel { position: static; }
+      .cockpit { min-height: 840px; }
+    }
+
+    @media (max-width: 840px) {
+      .page { width: min(100% - 16px, 1540px); }
+      .hero, .progress, .scene-shell, .focus-panel { padding: 14px; }
+      .nav { flex-direction: column; align-items: flex-start; }
+      .nav-group { width: 100%; }
+      .nav-btn { flex: 1 1 auto; }
+      .grid-2, .stat-row, .breakdown-grid, .proof-strip, .light-rail, .step-controls { grid-template-columns: 1fr; }
+      .bubble { width: min(94vw, 420px); }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="top">
+      <article class="panel hero">
+        <h1>Jumeau formatif — LLM Cockpit V8</h1>
+        <p class="subtitle">Clique les repères numérotés pour comprendre chaque zone du cockpit.</p>
+        <div class="badges">
+          <span class="badge"><strong>Statique</strong></span>
+          <span class="badge"><strong>Formation</strong></span>
+          <span class="badge"><strong>Offline</strong></span>
+          <span class="badge"><strong>Basé sur les tests</strong></span>
+          <span class="badge"><strong>V8</strong></span>
+        </div>
+        <div class="light-rail" aria-label="Mini-preuves visuelles">
+          <figure class="proof">
+            <img src="screenshots/01_home_top.png" alt="Capture réelle du header et des providers" />
+            <span>Header + providers réels</span>
+          </figure>
+          <figure class="proof">
+            <img src="screenshots/06_dashboard_stats.png" alt="Capture réelle des stats dashboard" />
+            <span>Stats et logs réels</span>
+          </figure>
+          <figure class="proof">
+            <img src="screenshots/08_rag_panel.png" alt="Capture réelle du panneau RAG" />
+            <span>RAG local réel</span>
+          </figure>
+          <figure class="proof">
+            <img src="screenshots/10_serving_status_warning.png" alt="Capture réelle du statut serving" />
+            <span>Promu ≠ servi</span>
+          </figure>
+        </div>
+      </article>
+      <aside class="panel progress">
+        <div class="progress-top">
+          <div class="progress-count" id="progress-count">Repère 1 / 18</div>
+          <div class="progress-name" id="progress-name">Provider Ollama</div>
+        </div>
+        <div class="bar" aria-hidden="true"><span id="progress-fill"></span></div>
+        <div class="progress-note" id="progress-note">Navigation clavier: flèches gauche/droite, Échap ferme la bulle.</div>
+      </aside>
+    </section>
+
+    <section class="panel nav" aria-label="Navigation simulée">
+      <div class="nav-group">
+        <button class="nav-btn active" data-view="inventory" type="button">Inventaire</button>
+        <button class="nav-btn" data-view="dashboard" type="button">Dashboard</button>
+        <button class="nav-btn" data-view="tests" type="button">Tests</button>
+        <button class="nav-btn" data-view="rag" type="button">RAG</button>
+        <button class="nav-btn" data-view="adaptation" type="button">Adaptation</button>
+      </div>
+      <div class="legend">Données de démonstration pour formation, sans aucun appel backend.</div>
+    </section>
+
+    <section class="workspace">
+      <article class="panel scene-shell">
+        <div class="scene-header">
+          <div class="scene-title" id="scene-title">Vue Inventaire</div>
+          <div class="demo-note" id="scene-note">Maquette statique inspirée de l’interface réelle</div>
+        </div>
+
+        <div class="cockpit" id="cockpit">
+          <section class="view active" data-view="inventory">
+            <header class="topbar">
+              <h2>LLM Cockpit <span class="version">V8</span></h2>
+              <p class="subtitle-line">Inventaire → contrôle → rôles → registry → gateway → observabilité → évals → RAG → adaptation</p>
+              <nav class="topnav" aria-label="Navigation cockpit simulée">
+                <button class="active" type="button">Inventaire</button>
+                <button type="button">Dashboard</button>
+              </nav>
+            </header>
+
+            <div class="cards">
+              <section class="section" data-zone="provider" style="min-height: 120px;">
+                <h3>Providers</h3>
+                <div class="provider-status">
+                  <span class="dot" aria-hidden="true"></span>
+                  <strong>Ollama</strong>
+                  <span class="pill ok">reachable</span>
+                  <span class="muted">http://127.0.0.1:11434</span>
+                </div>
+                <p class="poll-note">Le provider sert à déclarer le moteur. Si Ollama est fermé, tout le cockpit reste vivant mais honnête.</p>
+                <div class="overlay"></div>
+              </section>
+
+              <section class="section" data-zone="inventory">
+                <h3>Inventaire des modèles</h3>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Modèle</th><th>Famille</th><th>Quant.</th><th>Taille</th><th>Digest</th><th>État</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr><td class="model-name">qwen2.5:7b</td><td>qwen2.5</td><td>Q4_K_M</td><td>4.7 GB</td><td class="muted">9d3b4f…</td><td><span class="pill ok">loaded</span></td></tr>
+                      <tr><td class="model-name">qwen2.5-coder:7b</td><td>qwen2.5-coder</td><td>Q4_K_M</td><td>4.9 GB</td><td class="muted">3b7a11…</td><td><span class="pill ok">loaded</span></td></tr>
+                      <tr><td class="model-name">nomic-embed-text:latest</td><td>embedding</td><td>FP16</td><td>274 MB</td><td class="muted">a51f02…</td><td><span class="pill warn">not loaded</span></td></tr>
+                      <tr><td class="model-name">qwen2.5:14b-instruct-q6_K</td><td>qwen2.5</td><td>Q6_K</td><td>9.2 GB</td><td class="muted">f4c28e…</td><td><span class="pill ok">loaded</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p class="poll-note">La table montre des modèles installés, leur famille, quantization, taille, digest et état loaded / not loaded.</p>
+                <div class="overlay"></div>
+              </section>
+
+              <div class="grid-2">
+                <section class="section" data-zone="roles">
+                  <h3>Rôles</h3>
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Rôle</th><th>Assignation</th></tr></thead>
+                      <tbody>
+                        <tr><td class="role-name">chat</td><td>qwen2.5:7b</td></tr>
+                        <tr><td class="role-name">code</td><td>qwen2.5-coder:7b</td></tr>
+                        <tr><td class="role-name">embedding</td><td>nomic-embed-text:latest</td></tr>
+                        <tr><td class="role-name">quality</td><td>qwen2.5:14b-instruct-q6_K</td></tr>
+                        <tr><td class="role-name">fast</td><td>qwen2.5:7b</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="poll-note">Le rôle pointe vers un modèle réel. `nomic-embed-text` ne sert pas au chat.</p>
+                  <div class="overlay"></div>
+                </section>
+
+                <section class="section" data-zone="gateway">
+                  <h3>Gateway</h3>
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Rôle</th><th>Résolution</th><th>Statut</th></tr></thead>
+                      <tbody>
+                        <tr><td class="role-name">chat</td><td>ollama / qwen2.5:7b</td><td><span class="pill ok">routable</span></td></tr>
+                        <tr><td class="role-name">code</td><td>ollama / qwen2.5-coder:7b</td><td><span class="pill ok">routable</span></td></tr>
+                        <tr><td class="role-name">vision</td><td>—</td><td><span class="pill bad">non routable</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="poll-note">Le gateway résout un rôle vers un provider et un modèle. Il devient routable seulement si l’assignation existe.</p>
+                  <div class="overlay"></div>
+                </section>
+              </div>
+
+              <section class="section" data-zone="actions">
+                <h3>Tester un modèle</h3>
+                <div class="actions-box">
+                  <p class="poll-note">Test direct d’un modèle depuis l’inventaire. Ce n’est pas un appel gateway.</p>
+                  <div class="actions-row">
+                    <input class="mini-input" type="text" value="qwen2.5:7b" aria-label="Modèle à tester" />
+                    <input class="mini-input" type="text" value="Réponds OK." aria-label="Prompt de test" />
+                    <button class="action-btn primary" type="button">Tester</button>
+                    <button class="action-btn" type="button">Charger</button>
+                    <button class="action-btn" type="button">Décharger</button>
+                  </div>
+                  <p class="notice">Dans l’interface réelle, le résultat apparaît dans le journal d’actions.</p>
+                </div>
+                <div class="overlay"></div>
+              </section>
+            </div>
+
+            <div class="overlay" aria-hidden="true"></div>
+          </section>
+
+          <section class="view" data-view="dashboard">
+            <header class="topbar">
+              <h2>LLM Cockpit <span class="version">V8</span></h2>
+              <p class="subtitle-line">Observabilité, scores, RAG, adaptation et statut de serving.</p>
+              <nav class="topnav" aria-label="Navigation cockpit simulée">
+                <button type="button">Inventaire</button>
+                <button class="active" type="button">Dashboard</button>
+              </nav>
+            </header>
+
+            <div class="cards">
+              <section class="section" data-zone="stats">
+                <h3>Stats gateway</h3>
+                <div class="stat-row">
+                  <div class="stat-card"><span class="stat-value">128</span><span class="stat-label">total requests</span></div>
+                  <div class="stat-card"><span class="stat-value">3</span><span class="stat-label">erreurs</span></div>
+                  <div class="stat-card"><span class="stat-value">2.3%</span><span class="stat-label">taux d’erreur</span></div>
+                  <div class="stat-card"><span class="stat-value">184</span><span class="stat-label">p50 ms</span></div>
+                  <div class="stat-card"><span class="stat-value">612</span><span class="stat-label">p95 ms</span></div>
+                </div>
+                <div class="breakdown-grid" style="margin-top: 10px;">
+                  <div class="small-card"><h4>Par modèle</h4><p class="poll-note">qwen2.5:7b · 82 · 1 err</p></div>
+                  <div class="small-card"><h4>Par provider</h4><p class="poll-note">ollama · 128 · 3 err</p></div>
+                  <div class="small-card"><h4>Par app</h4><p class="poll-note">formation · 7 appels</p></div>
+                </div>
+                <div class="overlay"></div>
+              </section>
+
+              <div class="grid-2">
+                <section class="section" data-zone="logs">
+                  <h3>Logs SQLite</h3>
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Horodatage</th><th>Rôle</th><th>Modèle</th><th>Statut</th><th>Latence</th></tr></thead>
+                      <tbody>
+                        <tr><td class="ts">2026-06-29 11:04:12</td><td>chat</td><td>qwen2.5:7b</td><td><span class="pill ok">ok</span></td><td>182 ms</td></tr>
+                        <tr><td class="ts">2026-06-29 11:05:01</td><td>chat</td><td>qwen2.5:7b</td><td><span class="pill ok">ok</span></td><td>194 ms</td></tr>
+                        <tr><td class="ts">2026-06-29 11:05:40</td><td>code</td><td>qwen2.5-coder:7b</td><td><span class="pill bad">error</span></td><td>—</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="poll-note">Chaque appel gateway crée une ligne avec rôle, modèle, statut et latence.</p>
+                  <div class="overlay"></div>
+                </section>
+
+                <section class="section" data-zone="scoreboard">
+                  <h3>Scoreboard</h3>
+                  <div class="table-wrap">
+                    <table class="scoreboard-table">
+                      <thead><tr><th>Rôle</th><th>Modèle</th><th>Réussite</th><th>Checks</th><th>Cas</th></tr></thead>
+                      <tbody>
+                        <tr><td>chat</td><td class="model-name">qwen2.5:7b</td><td>96%</td><td>24/25</td><td>8</td></tr>
+                        <tr><td>code</td><td class="model-name">qwen2.5-coder:7b</td><td>91%</td><td>22/24</td><td>8</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="poll-note">Le scoreboard s’alimente d’évaluations lancées sur des suites locales.</p>
+                  <div class="overlay"></div>
+                </section>
+              </div>
+
+              <div class="grid-2">
+                <section class="section" data-zone="rag">
+                  <h3>RAG local</h3>
+                  <div class="rag-panels">
+                    <div class="notice">Ingestion d’un document .md, chunking, embeddings, puis requête avec sources.</div>
+                    <div class="table-wrap">
+                      <table>
+                        <thead><tr><th>Doc</th><th>Chunks</th><th>Dim</th><th>Modèle</th></tr></thead>
+                        <tbody>
+                          <tr><td class="model-name">notes.md</td><td>7</td><td>768</td><td>nomic-embed-text:latest</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p class="poll-note">La requête doit répondre avec des sources; sans embeddings assignés, c’est une erreur fréquente.</p>
+                  </div>
+                  <div class="overlay"></div>
+                </section>
+
+                <section class="section" data-zone="training">
+                  <h3>Adaptation</h3>
+                  <div class="train-panels">
+                    <div class="notice">Dry-run: orchestration contrôlée, pas de vrai fine-tuning.</div>
+                    <div class="table-wrap">
+                      <table>
+                        <thead><tr><th>#</th><th>Base</th><th>Type</th><th>Registry</th><th>Serving</th></tr></thead>
+                        <tbody>
+                          <tr><td>12</td><td class="model-name">qwen2.5:7b</td><td>baseline</td><td><span class="pill ok">active</span></td><td><span class="pill ok">served_as_base</span></td></tr>
+                          <tr><td>18</td><td class="model-name">qwen2.5:7b</td><td>candidate</td><td><span class="pill ok">active</span></td><td><span class="pill warn">not_served</span></td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="notice">Promouvoir dans le registry ne veut pas dire servir dans le gateway.</div>
+                  </div>
+                  <div class="overlay"></div>
+                </section>
+              </div>
+            </div>
+          </section>
+        </div>
+      </article>
+
+      <aside class="panel focus-panel">
+        <div class="focus-head">
+          <div class="focus-kicker" id="focus-kicker">Repère 1 / 18</div>
+          <h2 class="focus-title" id="focus-title">Provider Ollama</h2>
+          <p class="focus-text" id="focus-text"></p>
+        </div>
+
+        <div class="focus-meta">
+          <div class="meta-box">
+            <h4>Ce que ça prouve</h4>
+            <p id="meta-proof"></p>
+          </div>
+          <div class="meta-box">
+            <h4>Comment le vérifier</h4>
+            <p id="meta-verify"></p>
+          </div>
+          <div class="meta-box">
+            <h4>Erreur fréquente</h4>
+            <p id="meta-error"></p>
+          </div>
+          <div class="meta-box">
+            <h4>Test automatisé associé</h4>
+            <p id="meta-tests"></p>
+          </div>
+        </div>
+
+        <div class="step-controls" aria-label="Parcours guidé">
+          <button id="prev-step" type="button">Précédent</button>
+          <button id="next-step" class="primary" type="button">Suivant</button>
+          <button id="done-step" class="good" type="button">J’ai compris</button>
+          <button id="reset-step" type="button">Réinitialiser</button>
+        </div>
+
+        <section class="checklist" aria-labelledby="checklist-title">
+          <h3 id="checklist-title">Checklist de compréhension</h3>
+          <div class="checklist-grid" id="checklist"></div>
+        </section>
+
+        <details class="drawer">
+          <summary>Commandes utiles</summary>
+          <div class="cmd">cd /home/gear-code/02_projects/llm-cockpit/llm-cockpit-v0
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8001</div>
+          <div class="cmd">uv run ruff check .
+uv run pytest</div>
+          <div class="cmd">curl -X POST http://127.0.0.1:8001/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "X-Cockpit-App: formation" \
+  -d '{
+    "model": "chat",
+    "messages": [
+      {"role": "user", "content": "Réponds simplement OK."}
+    ]
+  }'</div>
+          <div class="cmd">curl http://127.0.0.1:8001/api/stats
+curl http://127.0.0.1:8001/api/logs
+curl http://127.0.0.1:8001/api/scoreboard</div>
+        </details>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "llm-cockpit-v8.formative-twin.v1";
+      const checklistMap = [
+        { label: "Provider compris", markers: [1], description: "Le provider sert à déclarer le moteur et son reachability." },
+        { label: "Inventaire compris", markers: [2, 3], description: "Table des modèles + loaded/not loaded." },
+        { label: "Rôles compris", markers: [4, 5, 6, 7], description: "chat, code, embedding, quality." },
+        { label: "Gateway compris", markers: [8], description: "Routage par rôle vers provider et modèle." },
+        { label: "Test modèle compris", markers: [9], description: "Test direct d’un modèle, pas le gateway." },
+        { label: "Logs/stats compris", markers: [10, 11], description: "Trafic réel, latence, p50/p95, lignes SQL." },
+        { label: "Évals comprises", markers: [12], description: "Suite locale et checks déterministes." },
+        { label: "Scoreboard compris", markers: [13], description: "Agrégation par rôle / modèle." },
+        { label: "RAG compris", markers: [14, 15], description: "Ingestion puis requête avec sources." },
+        { label: "Dry-run compris", markers: [16], description: "Orchestration contrôlée, pas d’entraînement réel." },
+        { label: "Registry compris", markers: [17], description: "Baseline, candidat et activation registry." },
+        { label: "Serving status compris", markers: [18], description: "Promu ≠ servi." }
+      ];
+
+      const steps = [
+        {
+          id: 1,
+          view: "inventory",
+          title: "Provider Ollama",
+          scene: "inventory",
+          position: { left: "4.5%", top: "12%", width: "12%", height: "7%" },
+          bubble: { left: "15%", top: "8%" },
+          proof: "Le provider déclare le moteur. `reachable` est la preuve que le cockpit parle au service. Si Ollama est fermé, tout ce qui dépend de lui reste honnêtement injoignable.",
+          verify: "Regarde le statut du provider, le point d’accès et le nombre de modèles. Dans l’interface réelle, le panneau Providers doit afficher `joignable`.",
+          error: "Ollama fermé ou `base_url` incorrect. L’inventaire peut rester vide même si le cockpit lui-même charge.",
+          tests: "test_health.py"
+        },
+        {
+          id: 2,
+          view: "inventory",
+          title: "Inventaire des modèles",
+          scene: "inventory",
+          position: { left: "3.5%", top: "26.2%", width: "93%", height: "20%" },
+          bubble: { left: "27%", top: "22%" },
+          proof: "Tu valides le catalogue réel: nom, famille, quantization, taille, digest et état loaded/not loaded.",
+          verify: "Lis les colonnes de la table. Ici, loaded veut dire en mémoire, pas juste installé sur disque.",
+          error: "Confondre `not loaded` avec `installed`. Le modèle peut être présent mais pas chargé.",
+          tests: "test_inventory.py · test_ollama_adapter.py"
+        },
+        {
+          id: 3,
+          view: "inventory",
+          title: "Installé vs chargé",
+          scene: "inventory",
+          position: { left: "61%", top: "33.4%", width: "30%", height: "13%" },
+          bubble: { left: "58%", top: "46%" },
+          proof: "Installé = présent sur disque. Chargé = en mémoire et prêt à servir.",
+          verify: "Lis les badges de statut. Le cockpit ne doit jamais faire comme si un modèle installé était automatiquement disponible en RAM.",
+          error: "Croire qu’un modèle installé est déjà prêt à répondre. Non: il faut le charger.",
+          tests: "test_inventory.py · test_ollama_adapter.py"
+        },
+        {
+          id: 4,
+          view: "inventory",
+          title: "Rôles",
+          scene: "inventory",
+          position: { left: "5%", top: "55.3%", width: "41%", height: "31%" },
+          bubble: { left: "22%", top: "54%" },
+          proof: "Les rôles représentent des usages stables: chat, code, embedding, fast, quality.",
+          verify: "Regarde la colonne d’assignation. Le rôle choisit le modèle, pas l’inverse.",
+          error: "Mettre `nomic-embed-text` dans `chat`. Ce modèle sert aux embeddings, pas au dialogue.",
+          tests: "test_roles.py"
+        },
+        {
+          id: 5,
+          view: "inventory",
+          title: "Assignation chat",
+          scene: "inventory",
+          position: { left: "8%", top: "61%", width: "33%", height: "7%" },
+          bubble: { left: "39%", top: "58%" },
+          proof: "Le rôle `chat` doit pointer vers un modèle généraliste disponible.",
+          verify: "Exemple à mémoriser: `chat -> qwen2.5:7b`.",
+          error: "Choisir un modèle trop gros, absent, ou un embedder.",
+          tests: "test_roles.py"
+        },
+        {
+          id: 6,
+          view: "inventory",
+          title: "Assignation code",
+          scene: "inventory",
+          position: { left: "8%", top: "68%", width: "33%", height: "7%" },
+          bubble: { left: "39%", top: "66%" },
+          proof: "Le rôle `code` doit être spécialisé code, pas juste rapide.",
+          verify: "Exemple à mémoriser: `code -> qwen2.5-coder:7b`.",
+          error: "Prendre un modèle généraliste et s’attendre à de meilleures réponses code.",
+          tests: "test_roles.py"
+        },
+        {
+          id: 7,
+          view: "inventory",
+          title: "Assignation embedding",
+          scene: "inventory",
+          position: { left: "8%", top: "75%", width: "33%", height: "7%" },
+          bubble: { left: "39%", top: "72%" },
+          proof: "L’embedding alimente le RAG. Ce rôle ne sert pas le chat.",
+          verify: "Exemple à mémoriser: `embedding -> nomic-embed-text:latest`.",
+          error: "Penser que `nomic-embed-text` peut dialoguer comme un chat model.",
+          tests: "test_roles.py"
+        },
+        {
+          id: 8,
+          view: "inventory",
+          title: "Gateway routes",
+          scene: "inventory",
+          position: { left: "49%", top: "56%", width: "46%", height: "14%" },
+          bubble: { left: "62%", top: "51%" },
+          proof: "Le gateway résout un rôle vers un provider et un modèle réel.",
+          verify: "Lis les colonnes de résolution. `chat` devient routable seulement s’il est assigné.",
+          error: "Gateway non routable parce que le rôle est vide ou le modèle absent.",
+          tests: "test_gateway.py · test_routing.py"
+        },
+        {
+          id: 9,
+          view: "inventory",
+          title: "Test modèle",
+          scene: "inventory",
+          position: { left: "6%", top: "86.2%", width: "90%", height: "10%" },
+          bubble: { left: "54%", top: "81%" },
+          proof: "Le test de modèle valide un modèle précis, directement depuis l’interface.",
+          verify: "Clique `Tester` sur un modèle. C’est différent d’un test gateway ou d’un rôle.",
+          error: "Confondre test modèle et test gateway. Le premier évalue un modèle précis, le second l’API routée.",
+          tests: "test_actions.py"
+        },
+        {
+          id: 10,
+          view: "dashboard",
+          title: "Stats gateway",
+          scene: "dashboard",
+          position: { left: "4.5%", top: "24%", width: "91%", height: "19%" },
+          bubble: { left: "19%", top: "18%" },
+          proof: "Total requests, erreurs, p50 et p95 racontent l’activité réelle du gateway.",
+          verify: "Sur le dashboard, les cartes montent dès que de vrais appels gateway passent.",
+          error: "Voir des stats à zéro et croire à un bug. C’est normal si aucun appel n’a encore eu lieu.",
+          tests: "test_stats.py"
+        },
+        {
+          id: 11,
+          view: "dashboard",
+          title: "Logs",
+          scene: "dashboard",
+          position: { left: "4.5%", top: "47%", width: "45%", height: "29%" },
+          bubble: { left: "16%", top: "46%" },
+          proof: "Chaque appel gateway écrit une ligne avec rôle, modèle, latence et statut.",
+          verify: "Compare le nombre d’appels faits avec le nombre de lignes dans les logs. Une requête = une entrée.",
+          error: "Chercher le prompt en clair. Par défaut, il n’est pas exposé.",
+          tests: "test_logging.py"
+        },
+        {
+          id: 12,
+          view: "dashboard",
+          title: "Évaluations",
+          scene: "dashboard",
+          position: { left: "4.5%", top: "78.5%", width: "44.2%", height: "18%" },
+          bubble: { left: "23%", top: "72%" },
+          proof: "Une évaluation lance une suite sur plusieurs modèles et produit un run structuré.",
+          verify: "Lance une suite comme `summary`. Les checks déterminent le verdict, pas l’intuition.",
+          error: "Croire qu’un modèle absent casse le run. En réalité il devient un cas `error` et le run continue.",
+          tests: "test_evals.py · test_checks.py"
+        },
+        {
+          id: 13,
+          view: "dashboard",
+          title: "Scoreboard",
+          scene: "dashboard",
+          position: { left: "50.6%", top: "47%", width: "44.2%", height: "29%" },
+          bubble: { left: "66%", top: "47%" },
+          proof: "Le scoreboard agrège les résultats par rôle et par modèle.",
+          verify: "Lis les scores, la réussite, les checks et le nombre de cas. Vide = aucune évaluation encore lancée.",
+          error: "S’attendre à un scoreboard rempli sans run d’évaluation.",
+          tests: "test_scoreboard.py"
+        },
+        {
+          id: 14,
+          view: "dashboard",
+          title: "RAG ingestion",
+          scene: "dashboard",
+          position: { left: "4.5%", top: "78.5%", width: "44.2%", height: "18%" },
+          bubble: { left: "49%", top: "70%" },
+          proof: "Ingestion = document local + chunking + embeddings avant toute requête.",
+          verify: "Ajoute un petit `.md`, vérifie le nombre de chunks et le modèle d’embedding.",
+          error: "Oublier le modèle d’embedding ou le rôle `embedding`.",
+          tests: "test_rag_ingest.py"
+        },
+        {
+          id: 15,
+          view: "dashboard",
+          title: "RAG query",
+          scene: "dashboard",
+          position: { left: "49.2%", top: "78.5%", width: "45.3%", height: "18%" },
+          bubble: { left: "66%", top: "72%" },
+          proof: "Une question RAG doit répondre avec des sources, pas inventer.",
+          verify: "Pose une question après ingestion. Vérifie la présence de sources citées.",
+          error: "Pas de sources parce qu’aucun doc pertinent n’a été ingéré.",
+          tests: "test_rag_query.py · test_rag_eval.py"
+        },
+        {
+          id: 16,
+          view: "dashboard",
+          title: "Adaptation dry-run",
+          scene: "dashboard",
+          position: { left: "50.4%", top: "24%", width: "44.2%", height: "19%" },
+          bubble: { left: "69%", top: "18%" },
+          proof: "Dry-run valide l’orchestration sans lancer de vrai fine-tuning.",
+          verify: "Observe le panneau Adaptation. Sans `TRAIN_RUNNER`, le job reste contrôlé et ne produit pas de vraie session.",
+          error: "Croire que dry-run équivaut à un entraînement réel.",
+          tests: "test_dataset.py · test_train_job.py"
+        },
+        {
+          id: 17,
+          view: "dashboard",
+          title: "Registry",
+          scene: "dashboard",
+          position: { left: "50.4%", top: "47%", width: "44.2%", height: "29%" },
+          bubble: { left: "60%", top: "40%" },
+          proof: "Le registry contient baseline, candidat et état actif côté registry.",
+          verify: "Observe `active` et `baseline`. Une promotion n’est qu’une décision de registry.",
+          error: "Penser qu’activer une version l’envoie automatiquement au gateway.",
+          tests: "test_model_registry.py"
+        },
+        {
+          id: 18,
+          view: "dashboard",
+          title: "Serving status",
+          scene: "dashboard",
+          position: { left: "50.4%", top: "82%", width: "44.2%", height: "12%" },
+          bubble: { left: "56%", top: "80%" },
+          proof: "`served_as_base` signifie servi par défaut. `not_served` signifie que le candidat est visible au registry mais pas servi par le gateway.",
+          verify: "Lis le statut du candidat promu: il reste `not_served`. C’est le point central à retenir.",
+          error: "Confondre `Promouvoir (registry)` et `servir`. En V8, ce n’est pas la même chose.",
+          tests: "test_model_registry.py · test_promotion_does_not_make_candidate_served"
+        }
+      ];
+
+      const state = loadState();
+      let current = state.current ?? 0;
+      let activeView = steps[current].view;
+      let bubbleVisible = true;
+
+      const els = {
+        progressCount: document.getElementById("progress-count"),
+        progressName: document.getElementById("progress-name"),
+        progressFill: document.getElementById("progress-fill"),
+        progressNote: document.getElementById("progress-note"),
+        sceneTitle: document.getElementById("scene-title"),
+        sceneNote: document.getElementById("scene-note"),
+        cockpit: document.getElementById("cockpit"),
+        focusKicker: document.getElementById("focus-kicker"),
+        focusTitle: document.getElementById("focus-title"),
+        focusText: document.getElementById("focus-text"),
+        metaProof: document.getElementById("meta-proof"),
+        metaVerify: document.getElementById("meta-verify"),
+        metaError: document.getElementById("meta-error"),
+        metaTests: document.getElementById("meta-tests"),
+        checklist: document.getElementById("checklist"),
+        prev: document.getElementById("prev-step"),
+        next: document.getElementById("next-step"),
+        done: document.getElementById("done-step"),
+        reset: document.getElementById("reset-step")
+      };
+
+      const navButtons = Array.from(document.querySelectorAll(".nav-btn"));
+      const views = Array.from(document.querySelectorAll(".view"));
+      const markers = [];
+      const overlays = new Map();
+
+      views.forEach((view) => {
+        view.querySelectorAll(".overlay").forEach((overlay) => {
+          overlays.set(view.dataset.view + ":" + overlay.parentElement.dataset.zone, overlay.parentElement);
+        });
+      });
+
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return defaultState();
+          const parsed = JSON.parse(raw);
+          const completed = Array.isArray(parsed.completed) ? parsed.completed.map(Boolean) : [];
+          while (completed.length < steps.length) completed.push(false);
+          return {
+            current: clamp(Number(parsed.current) || 0, 0, steps.length - 1),
+            completed: completed.slice(0, steps.length)
+          };
+        } catch (_) {
+          return defaultState();
+        }
+      }
+
+      function defaultState() {
+        return {
+          current: 0,
+          completed: Array.from({ length: steps.length }, () => false)
+        };
+      }
+
+      function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          current,
+          completed: state.completed
+        }));
+      }
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function setView(view) {
+        activeView = view;
+        views.forEach((v) => v.classList.toggle("active", v.dataset.view === view));
+        navButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.view === view));
+        els.sceneTitle.textContent = view === "inventory"
+          ? "Vue Inventaire"
+          : view === "dashboard"
+            ? "Vue Dashboard"
+            : view === "tests"
+              ? "Vue Tests"
+              : view === "rag"
+                ? "Vue RAG"
+                : "Vue Adaptation";
+      }
+
+      function setSpotlight(step) {
+        const scene = document.querySelector(`.view[data-view="${step.view}"]`);
+        if (!scene) return;
+        let spot = scene.querySelector(".spotlight");
+        if (!spot) {
+          spot = document.createElement("div");
+          spot.className = "spotlight";
+          scene.appendChild(spot);
+        }
+        spot.style.left = step.position.left;
+        spot.style.top = step.position.top;
+        spot.style.width = step.position.width;
+        spot.style.height = step.position.height;
+      }
+
+      function zoneByStep(id) {
+        if (id <= 1) return "provider";
+        if (id === 2 || id === 3) return "inventory";
+        if (id >= 4 && id <= 7) return "roles";
+        if (id === 8) return "gateway";
+        if (id === 9) return "actions";
+        if (id === 10) return "stats";
+        if (id === 11) return "logs";
+        if (id === 12) return "scoreboard";
+        if (id === 13) return "scoreboard";
+        if (id === 14) return "rag";
+        if (id === 15) return "rag";
+        if (id === 16) return "training";
+        if (id === 17) return "training";
+        return "training";
+      }
+
+      function clearBubbles() {
+        document.querySelectorAll(".bubble").forEach((el) => el.remove());
+        document.querySelectorAll(".spotlight").forEach((el) => el.remove());
+      }
+
+      function renderChecklist() {
+        els.checklist.innerHTML = checklistMap.map((item, idx) => {
+          const done = item.markers.every((marker) => state.completed[marker - 1]);
+          return `
+            <div class="check-item ${done ? "done" : ""}">
+              <span class="check-box" aria-hidden="true"></span>
+              <div>
+                <strong>${item.label}</strong>
+                <small>${item.description}</small>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      function updateProgress() {
+        els.progressCount.textContent = `Repère ${current + 1} / ${steps.length}`;
+        els.progressName.textContent = steps[current].title;
+        els.progressFill.style.width = `${((current + 1) / steps.length) * 100}%`;
+        els.progressNote.textContent = `Vue active: ${labelForView(activeView)}. Flèche droite = suivant, flèche gauche = précédent, Échap ferme la bulle.`;
+      }
+
+      function labelForView(view) {
+        return view === "inventory"
+          ? "Inventaire"
+          : view === "dashboard"
+            ? "Dashboard"
+            : view === "tests"
+              ? "Tests"
+              : view === "rag"
+                ? "RAG"
+                : "Adaptation";
+      }
+
+      function syncNav() {
+        navButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.view === activeView));
+      }
+
+      function openStep(index, force = false) {
+        current = clamp(index, 0, steps.length - 1);
+        state.current = current;
+        bubbleVisible = true;
+        const step = steps[current];
+        if (step.view !== activeView || force) {
+          switchView(step.view);
+        }
+        renderStep();
+        saveState();
+      }
+
+      function switchView(view) {
+        els.cockpit.classList.add("scene-switch");
+        window.clearTimeout(switchView.timer);
+        switchView.timer = window.setTimeout(() => {
+          els.cockpit.classList.remove("scene-switch");
+        }, 180);
+        setView(view);
+        syncNav();
+      }
+
+      function renderStep() {
+        const step = steps[current];
+        switchView(step.view);
+        clearBubbles();
+        setSpotlight(step);
+        if (bubbleVisible) renderBubble(step);
+        renderChecklist();
+        updateProgress();
+        highlightMarker(current + 1);
+        els.focusKicker.textContent = `Repère ${current + 1} / ${steps.length}`;
+        els.focusTitle.textContent = step.title;
+        els.focusText.textContent = markerSummary(step.id);
+        els.metaProof.textContent = step.proof;
+        els.metaVerify.textContent = step.verify;
+        els.metaError.textContent = step.error;
+        els.metaTests.textContent = step.tests;
+        els.prev.disabled = current === 0;
+        els.next.disabled = current === steps.length - 1;
+        els.done.disabled = state.completed[current];
+        els.done.textContent = state.completed[current] ? "Déjà compris" : "J’ai compris";
+      }
+
+      function markerSummary(id) {
+        const summary = {
+          1: "Provider, reachability et santé du moteur.",
+          2: "Table des modèles installés et chargés.",
+          3: "Différence entre présence sur disque et mémoire.",
+          4: "Rôles applicatifs stables.",
+          5: "Assignation du chat.",
+          6: "Assignation du code.",
+          7: "Assignation de l’embedding.",
+          8: "Résolution gateway par rôle.",
+          9: "Test direct d’un modèle.",
+          10: "Stats liées au trafic gateway.",
+          11: "Entrées logs une par appel.",
+          12: "Exécuter une suite d’évaluation.",
+          13: "Lire et comparer le scoreboard.",
+          14: "Ingestion RAG et chunking.",
+          15: "Question RAG avec sources.",
+          16: "Dry-run d’adaptation.",
+          17: "Registry, baseline et candidat.",
+          18: "Promu dans le registry, pas servi."
+        };
+        return summary[id];
+      }
+
+      function highlightMarker(id) {
+        markers.forEach((m) => {
+          m.classList.toggle("current", Number(m.dataset.id) === id);
+          m.classList.toggle("done", state.completed[Number(m.dataset.id) - 1]);
+        });
+      }
+
+      function renderBubble(step) {
+        const bubble = document.createElement("div");
+        bubble.className = "bubble open";
+        bubble.style.left = step.bubble.left;
+        bubble.style.top = step.bubble.top;
+        bubble.innerHTML = `
+          <span class="tag">Repère ${step.id}</span>
+          <h3>${step.title}</h3>
+          <p><strong>Ce que ça prouve:</strong> ${escapeHtml(step.proof)}</p>
+          <p><strong>Comment tu le vérifies dans l’interface:</strong> ${escapeHtml(step.verify)}</p>
+          <p class="small"><strong>Erreur fréquente:</strong> ${escapeHtml(step.error)}</p>
+          <p class="small"><strong>Test automatisé associé:</strong> ${escapeHtml(step.tests)}</p>
+          <div class="bubble-actions">
+            <button class="primary" type="button" data-action="next">Suivant</button>
+            <button class="good" type="button" data-action="done">J’ai compris</button>
+          </div>
+        `;
+
+        const scene = document.querySelector(`.view[data-view="${step.view}"]`);
+        scene.appendChild(bubble);
+
+        bubble.querySelector('[data-action="next"]').addEventListener("click", () => openStep(current + 1));
+        bubble.querySelector('[data-action="done"]').addEventListener("click", markCurrentDone);
+      }
+
+      function escapeHtml(text) {
+        return String(text)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function markCurrentDone() {
+        state.completed[current] = true;
+        openStep(current);
+      }
+
+      function resetAll() {
+        state.current = 0;
+        state.completed = Array.from({ length: steps.length }, () => false);
+        current = 0;
+        openStep(0, true);
+      }
+
+      function buildMarkers() {
+        steps.forEach((step) => {
+          const marker = document.createElement("button");
+          marker.type = "button";
+          marker.className = "marker";
+          marker.dataset.id = String(step.id);
+          marker.textContent = String(step.id);
+          marker.setAttribute("aria-label", `Repère ${step.id} : ${step.title}`);
+          marker.style.left = step.position.left;
+          marker.style.top = step.position.top;
+          marker.style.width = "30px";
+          marker.style.height = "30px";
+          marker.style.transform = "translate(-50%, -50%)";
+          marker.addEventListener("click", () => openStep(step.id - 1));
+
+          const scene = document.querySelector(`.view[data-view="${step.view}"]`);
+          scene.appendChild(marker);
+          markers.push(marker);
+        });
+      }
+
+      navButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          if (btn.dataset.view === "inventory") {
+            switchView("inventory");
+            openStep(Math.min(current, 8));
+          } else if (btn.dataset.view === "dashboard") {
+            switchView("dashboard");
+            openStep(Math.max(current, 9));
+          } else if (btn.dataset.view === "tests") {
+            switchView("inventory");
+            openStep(8);
+          } else if (btn.dataset.view === "rag") {
+            switchView("dashboard");
+            openStep(13);
+          } else if (btn.dataset.view === "adaptation") {
+            switchView("dashboard");
+            openStep(15);
+          }
+        });
+      });
+
+      els.prev.addEventListener("click", () => openStep(current - 1));
+      els.next.addEventListener("click", () => openStep(current + 1));
+      els.done.addEventListener("click", markCurrentDone);
+      els.reset.addEventListener("click", resetAll);
+
+      document.addEventListener("keydown", (event) => {
+        if (event.altKey || event.ctrlKey || event.metaKey) return;
+        if (event.key === "ArrowRight") {
+          event.preventDefault();
+          openStep(current + 1);
+        } else if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          openStep(current - 1);
+        } else if (event.key === "Escape") {
+          clearBubbles();
+          bubbleVisible = false;
+          renderChecklist();
+          updateProgress();
+        }
+      });
+
+      buildMarkers();
+      openStep(current, true);
+      renderChecklist();
+      syncNav();
+
+      window.addEventListener("resize", () => {
+        window.clearTimeout(window.__twinResize);
+        window.__twinResize = window.setTimeout(() => renderStep(), 120);
+      });
+    })();
+  </script>
+</body>
+</html>
