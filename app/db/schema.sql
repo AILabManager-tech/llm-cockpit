@@ -80,3 +80,44 @@ CREATE TABLE IF NOT EXISTS rag_chunk (
 );
 
 CREATE INDEX IF NOT EXISTS idx_rag_chunk_doc ON rag_chunk(doc_id);
+
+-- V8 : orchestration d'adaptation LoRA/QLoRA. Le cockpit orchestre et mesure ;
+-- l'entraînement réel vit dans un runner externe allowlisté (jamais ici).
+
+CREATE TABLE IF NOT EXISTS dataset (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts      TEXT    NOT NULL,
+    name    TEXT    NOT NULL,
+    path    TEXT    NOT NULL,
+    rows    INTEGER NOT NULL,
+    status  TEXT    NOT NULL,     -- "valid"
+    detail  TEXT
+);
+
+CREATE TABLE IF NOT EXISTS train_job (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts          TEXT    NOT NULL,
+    dataset_id  INTEGER NOT NULL,
+    base_model  TEXT    NOT NULL,
+    method      TEXT    NOT NULL,     -- "lora" | "qlora"
+    status      TEXT    NOT NULL,     -- pending|running|done|failed|cancelled|dry_run
+    version_id  INTEGER,
+    log_tail    TEXT,
+    FOREIGN KEY (dataset_id) REFERENCES dataset(id)
+);
+
+CREATE TABLE IF NOT EXISTS model_version (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts           TEXT    NOT NULL,
+    base_model   TEXT    NOT NULL,
+    method       TEXT,                -- NULL pour le baseline
+    adapter_path TEXT,                -- NULL pour le baseline
+    status       TEXT    NOT NULL,    -- "baseline" | "candidate"
+    is_baseline  INTEGER NOT NULL DEFAULT 0,
+    active       INTEGER NOT NULL DEFAULT 0,
+    eval_run_id  INTEGER,
+    pass_rate    REAL,
+    job_id       INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_model_version_base ON model_version(base_model);

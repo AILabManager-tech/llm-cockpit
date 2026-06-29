@@ -36,4 +36,12 @@
   hx-swap="innerHTML">
   {% include "partials/rag_panel.html" %}
 </div>
+
+<div
+  id="training-panel"
+  hx-get="/partials/training"
+  hx-trigger="every 10s, refresh"
+  hx-swap="innerHTML">
+  {% include "partials/training_panel.html" %}
+</div>
 {% endblock %}

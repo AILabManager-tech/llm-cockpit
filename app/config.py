@@ -46,3 +46,15 @@ RAG_TOP_K = int(os.getenv("RAG_TOP_K", "4"))
 RAG_CHUNK_SIZE = int(os.getenv("RAG_CHUNK_SIZE", "800"))
 RAG_CHUNK_OVERLAP = int(os.getenv("RAG_CHUNK_OVERLAP", "100"))
 RAG_SOURCE_PREVIEW_MAX = int(os.getenv("RAG_SOURCE_PREVIEW_MAX", "240"))
+
+# --- V8 : orchestration d'adaptation LoRA/QLoRA -------------------------
+# Datasets et adaptateurs = locaux, gitignored, jamais committés.
+DATASETS_DIR = os.getenv("DATASETS_DIR", os.path.join(DATA_DIR, "datasets"))
+ADAPTERS_DIR = os.getenv("ADAPTERS_DIR", os.path.join(DATA_DIR, "adapters"))
+# Modèle de base : vide → refus (jamais d'invention).
+TRAIN_BASE_MODEL = os.getenv("TRAIN_BASE_MODEL", "")
+# Runner externe allowlisté (module python). Vide → dry-run uniquement.
+TRAIN_RUNNER = os.getenv("TRAIN_RUNNER", "")
+TRAIN_ALLOWED_METHODS = {"lora", "qlora"}
+TRAIN_MIN_ROWS = int(os.getenv("TRAIN_MIN_ROWS", "1"))
+TRAIN_LOG_TAIL_MAX = int(os.getenv("TRAIN_LOG_TAIL_MAX", "2000"))

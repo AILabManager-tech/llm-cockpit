@@ -1,0 +1,120 @@
+<div class="training">
+  <h3>
+    Adaptation LoRA/QLoRA
+    {% if runner_configured %}
+      <span class="pill st-ok">runner configuré</span>
+    {% else %}
+      <span class="pill st-unsupported">dry-run (aucun runner)</span>
+    {% endif %}
+  </h3>
+  <p class="poll-note">
+    Le cockpit orchestre et mesure ; l'entraînement réel tourne dans un runner
+    externe allowlisté. Le baseline n'est jamais écrasé ; promotion gatée par
+    les évals V6.
+  </p>
+
+  <h4>Datasets</h4>
+  <form
+    class="train-form"
+    hx-post="/api/datasets"
+    hx-ext="json-enc"
+    hx-swap="none"
+    hx-on::after-request="htmx.trigger('#training-panel','refresh')">
+    <input type="text" name="name" placeholder="nom" aria-label="Nom du dataset" required>
+    <input type="text" name="path" placeholder="fichier .jsonl sous data/datasets"
+           aria-label="Chemin du dataset" required>
+    <button type="submit" class="btn-refresh">Valider</button>
+  </form>
+  {% if datasets %}
+  <table class="train-table">
+    <thead><tr><th>#</th><th>Nom</th><th>Lignes</th><th>Statut</th></tr></thead>
+    <tbody>
+      {% for d in datasets %}
+      <tr><td>{{ d.id }}</td><td class="model-name">{{ d.name }}</td>
+        <td>{{ d.rows }}</td><td><span class="pill st-ok">{{ d.status }}</span></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h4>Lancer un job</h4>
+  <form
+    class="train-form"
+    hx-post="/api/train"
+    hx-ext="json-enc"
+    hx-swap="none"
+    hx-on::after-request="htmx.trigger('#training-panel','refresh')">
+    <input type="number" name="dataset_id" placeholder="dataset_id"
+           aria-label="ID du dataset" required>
+    <input type="text" name="base_model" value="{{ base_model }}"
+           placeholder="base_model" aria-label="Modèle de base">
+    <select name="method" aria-label="Méthode">
+      <option value="lora">lora</option>
+      <option value="qlora">qlora</option>
+    </select>
+    <button type="submit" class="btn-refresh">Lancer</button>
+  </form>
+
+  {% if jobs %}
+  <h4>Jobs</h4>
+  <table class="train-table">
+    <thead><tr><th>#</th><th>Méthode</th><th>Statut</th><th>Version</th><th></th></tr></thead>
+    <tbody>
+      {% for j in jobs %}
+      <tr>
+        <td>{{ j.id }}</td>
+        <td>{{ j.method }}</td>
+        <td><span class="pill st-{{ 'ok' if j.status in ['done','dry_run'] else ('error' if j.status in ['failed','cancelled'] else 'src') }}">{{ j.status }}</span></td>
+        <td>{{ j.version_id if j.version_id is not none else "—" }}</td>
+        <td>
+          {% if j.status in ['pending','running'] %}
+          <button class="btn-action unload"
+                  hx-post="/api/train/{{ j.id }}/cancel" hx-swap="none"
+                  hx-on::after-request="htmx.trigger('#training-panel','refresh')">
+            Annuler
+          </button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if versions %}
+  <h4>Versions de modèle</h4>
+  <table class="train-table">
+    <thead>
+      <tr><th>#</th><th>Base</th><th>Type</th><th>Actif</th><th>Pass-rate</th><th>Éval</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for v in versions %}
+      <tr>
+        <td>{{ v.id }}</td>
+        <td class="model-name">{{ v.base_model }}</td>
+        <td>{{ "baseline" if v.is_baseline else (v.method or "candidate") }}</td>
+        <td>{% if v.active %}<span class="pill st-ok">actif</span>{% else %}—{% endif %}</td>
+        <td>{{ "%.3f"|format(v.pass_rate) if v.pass_rate is not none else "—" }}</td>
+        <td>{{ v.eval_run_id if v.eval_run_id is not none else "—" }}</td>
+        <td>
+          {% if not v.is_baseline %}
+          <button class="btn-action load"
+                  hx-post="/api/models/promote" hx-ext="json-enc"
+                  hx-vals='{"version_id": {{ v.id }}}' hx-swap="none"
+                  hx-on::after-request="htmx.trigger('#training-panel','refresh')">
+            Promouvoir
+          </button>
+          <button class="btn-action unload"
+                  hx-post="/api/models/rollback" hx-ext="json-enc"
+                  hx-vals='{"version_id": {{ v.id }}}' hx-swap="none"
+                  hx-on::after-request="htmx.trigger('#training-panel','refresh')">
+            Rollback
+          </button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>

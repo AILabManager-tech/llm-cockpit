@@ -631,6 +631,80 @@ Codes : chemin hors dossier / fichier absent / modèle d'embedding absent →
 
 ---
 
+# LLM Cockpit — V8 (adaptation LoRA/QLoRA orchestrée et mesurée)
+
+V8 orchestre une **adaptation de modèle contrôlée** : préparer un dataset
+validé, lancer un job LoRA/QLoRA via un **runner externe allowlisté**, enregistrer
+le résultat comme **version**, comparer au **baseline** via le harness V6, et
+**promouvoir uniquement si les évals le justifient** (sinon rollback). Le cockpit
+**orchestre et mesure** — il n'est pas une plateforme d'entraînement. V0–V7
+restent fonctionnels.
+
+```text
+V8 orchestre une adaptation LoRA/QLoRA, mesurée contre le baseline.
+V8 ne fait pas d'entraînement fondationnel ni de plateforme ML.
+V8 n'entraîne pas dans le process web (runner externe allowlisté).
+V8 ne promeut un modèle que si les évals le justifient ; sinon rollback.
+```
+
+## Garde-fous (non négociables)
+
+- **Pas d'entraînement dans le process web** : un job lance un **sous-process**
+  `[python, "-m", <TRAIN_RUNNER>, …]` en **argv liste**, jamais `shell=True`,
+  jamais `systemctl`. Supervision in-process uniquement.
+- **`TRAIN_RUNNER` absent → dry-run** : on prépare/valide et on journalise la
+  commande qui *serait* exécutée, sans rien lancer. Aucun entraînement fantôme.
+- **Dépendances lourdes** (`peft`/`transformers`/`bitsandbytes`) vivent dans le
+  runner externe, **pas dans le cockpit** (qui reste léger).
+- **Baseline jamais écrasé** : on *ajoute* une version. Job échoué/annulé →
+  baseline intact (non destructif).
+- **Promotion gatée par la preuve V6** : un candidat n'est promu que si son
+  `pass_rate` (agrégé depuis son `eval_run`) **dépasse** celui du baseline.
+- Datasets/adaptateurs **locaux** (`data/`), gitignored, jamais committés ; pas
+  de téléchargement distant ; `base_model` vide → refus (jamais d'invention).
+
+## Cycle de vie d'un job
+
+`pending → running → done | failed | cancelled` (ou `dry_run` sans runner). En
+cas de succès, le job enregistre un `ModelVersion` (candidat) pointant vers
+`data/adapters/job_<id>/`. La comparaison adapté vs baseline réutilise une suite
+V6 ; on **attache** le `eval_run` à chaque version, puis on promeut/rollback.
+
+## Nouveaux endpoints V8
+
+| Méthode / route                       | Corps / effet                              |
+|---------------------------------------|--------------------------------------------|
+| `POST   /api/datasets`                | `{name, path}` → `Dataset` (validé)        |
+| `GET    /api/datasets`                | `list[Dataset]`                            |
+| `POST   /api/train`                   | `{dataset_id, base_model?, method}` → `TrainJob` |
+| `GET    /api/train/{id}`              | statut + `log_tail`                        |
+| `POST   /api/train/{id}/cancel`       | annule (non destructif)                    |
+| `GET    /api/models/versions`         | `list[ModelVersion]` (dont baseline)       |
+| `POST   /api/models/versions/{id}/eval` | `{eval_run_id}` → attache une éval V6     |
+| `POST   /api/models/promote`          | `{version_id}` → promu **si** évals favorables (409 sinon) |
+| `POST   /api/models/rollback`         | `{version_id}` → retour baseline           |
+| `GET    /partials/training`           | Fragment HTMX                              |
+
+Codes : dataset/méthode/base_model invalide → **400** ; job/version inconnu →
+**404** ; promotion non justifiée par les évals → **409**.
+
+## Variables d'environnement V8
+
+| Variable           | Défaut            | Rôle                                          |
+|--------------------|-------------------|-----------------------------------------------|
+| `DATASETS_DIR`     | `data/datasets`   | Dossier autorisé des datasets                 |
+| `ADAPTERS_DIR`     | `data/adapters`   | Sortie des adaptateurs (par job)              |
+| `TRAIN_BASE_MODEL` | *(vide)*          | Modèle de base ; vide → refus                 |
+| `TRAIN_RUNNER`     | *(vide)*          | Module runner allowlisté ; vide → **dry-run** |
+| `TRAIN_MIN_ROWS`   | `1`               | Taille minimale du dataset                    |
+
+> **Note d'exécution** : sur cette machine, `TRAIN_RUNNER` n'est pas configuré
+> par défaut → le cockpit reste en **dry-run** (orchestration validée sans
+> lancer d'entraînement lourd). Brancher un runner réel (peft/QLoRA) est une
+> décision opérateur, hors de l'installation du cockpit.
+
+---
+
 ## Tests
 
 ```bash
@@ -644,5 +718,7 @@ parsing réel des adapters, la conversion ns→ms, la logique de validation/jour
 la persistance JSON réelle des rôles, l'agrégation/drift du registry, la
 résolution de routage du gateway, la persistance SQLite réelle des logs, les
 checks déterministes, le runner d'éval, l'agrégation du scoreboard, le chunking,
-le cosinus/retrieval RAG et le bridge RAG↔éval — jamais un mock d'interface.
-Aucun test ne dépend d'un provider local en cours d'exécution.
+le cosinus/retrieval RAG, le bridge RAG↔éval, la validation de dataset, le cycle
+de vie d'un job (runner mocké, argv liste jamais shell) et la promotion gatée par
+les évals — jamais un mock d'interface. Aucun test ne dépend d'un provider local
+en cours d'exécution, ni ne lance d'entraînement réel.

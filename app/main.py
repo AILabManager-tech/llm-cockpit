@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request, Response
@@ -25,9 +26,13 @@ from app.schemas import (
     ActionLogEntry,
     ActionRequest,
     ActionResult,
+    Dataset,
+    DatasetCreateRequest,
     EvalRunRequest,
     EvalRunSummary,
     ModelInfo,
+    ModelVersion,
+    PromoteRequest,
     ProviderConfig,
     ProviderHealth,
     ProviderRegisterRequest,
@@ -42,14 +47,23 @@ from app.schemas import (
     RoleAssignment,
     RoleAssignRequest,
     RoleTestRequest,
+    RollbackRequest,
     RouteDecision,
     ScoreboardRow,
     StatsSummary,
     TestRequest,
+    TrainJob,
+    TrainRequest,
+    VersionEvalRequest,
 )
 from app.services import action_log, stats
 from app.services.actions import ActionService
 from app.services.inventory import InventoryService
+from app.training import job as training_job
+from app.training import registry as model_registry
+from app.training.dataset import DatasetError, create_dataset
+from app.training.job import JobError
+from app.training.registry import PromotionError, RegistryError
 from app.services.registry import (
     DuplicateProviderError,
     RegistryConfigError,
@@ -379,6 +393,85 @@ async def api_rag_eval(payload: RagEvalRequest) -> EvalRunSummary:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
+# --- V8 : orchestration d'adaptation LoRA/QLoRA -------------------------
+
+
+@app.post("/api/datasets", response_model=Dataset)
+async def api_create_dataset(payload: DatasetCreateRequest) -> Dataset:
+    try:
+        return create_dataset(payload.name, payload.path)
+    except DatasetError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/datasets", response_model=list[Dataset])
+async def api_datasets() -> list[Dataset]:
+    return store.list_datasets()
+
+
+@app.post("/api/train", response_model=TrainJob)
+async def api_train(payload: TrainRequest) -> TrainJob:
+    try:
+        job = await training_job.create_job(
+            payload.dataset_id, payload.base_model, payload.method
+        )
+    except JobError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    # Supervision en arrière-plan : la requête ne bloque pas (dry-run ou runner).
+    asyncio.create_task(training_job.run_job(job["id"]))
+    return job
+
+
+@app.get("/api/train/{job_id}", response_model=TrainJob)
+async def api_train_status(job_id: int) -> TrainJob:
+    job = store.get_train_job(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"job inconnu : {job_id}")
+    return job
+
+
+@app.post("/api/train/{job_id}/cancel", response_model=TrainJob)
+async def api_train_cancel(job_id: int) -> TrainJob:
+    try:
+        return await training_job.cancel_job(job_id)
+    except JobError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.get("/api/models/versions", response_model=list[ModelVersion])
+async def api_model_versions() -> list[ModelVersion]:
+    return model_registry.list_versions()
+
+
+@app.post("/api/models/versions/{version_id}/eval", response_model=ModelVersion)
+async def api_version_attach_eval(
+    version_id: int, payload: VersionEvalRequest
+) -> ModelVersion:
+    try:
+        return model_registry.attach_eval(version_id, payload.eval_run_id)
+    except RegistryError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@app.post("/api/models/promote", response_model=ModelVersion)
+async def api_model_promote(payload: PromoteRequest) -> ModelVersion:
+    try:
+        return model_registry.promote(payload.version_id)
+    except RegistryError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except PromotionError as exc:
+        # Gating par la preuve V6 : refus explicite.
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.post("/api/models/rollback", response_model=ModelVersion)
+async def api_model_rollback(payload: RollbackRequest) -> ModelVersion:
+    try:
+        return model_registry.rollback(payload.version_id)
+    except RegistryError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
 # --- HTML (HTMX) --------------------------------------------------------
 
 
@@ -526,6 +619,7 @@ async def dashboard(request: Request) -> HTMLResponse:
             "documents": rag_store.list_documents(),
             "embed_model": config.RAG_EMBED_MODEL,
             "answer": None,
+            **_training_context(),
         },
     )
 
@@ -582,6 +676,23 @@ async def partials_rag_query(
         request,
         "partials/rag_answer.html",
         {"answer": answer, "error": error},
+    )
+
+
+def _training_context() -> dict:
+    return {
+        "datasets": store.list_datasets(),
+        "jobs": store.list_train_jobs(),
+        "versions": store.list_model_versions(),
+        "runner_configured": bool(config.TRAIN_RUNNER),
+        "base_model": config.TRAIN_BASE_MODEL,
+    }
+
+
+@app.get("/partials/training", response_class=HTMLResponse)
+async def partials_training(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request, "partials/training_panel.html", _training_context()
     )
 
 
