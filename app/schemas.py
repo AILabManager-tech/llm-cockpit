@@ -168,3 +168,42 @@ class RouteDecision(BaseModel):
     model: str | None = None
     ok: bool
     reason: str
+
+
+# --- V5 : observabilité (logs gateway + stats) --------------------------
+
+
+class RequestLog(BaseModel):
+    id: int
+    ts: str
+    route: str
+    app: str | None = None
+    requested: str | None = None
+    resolved_role: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    status: str                       # "ok" | "error" | "refused"
+    http_status: int
+    latency_ms: float | None = None
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    error: str | None = None
+    # NB : le contenu du prompt n'est jamais exposé via l'API (champ omis).
+
+
+class StatsBucket(BaseModel):
+    key: str
+    count: int
+    error_count: int
+
+
+class StatsSummary(BaseModel):
+    window_seconds: int | None = None
+    total: int
+    errors: int
+    error_rate: float
+    latency_p50_ms: float | None = None
+    latency_p95_ms: float | None = None
+    by_model: list[StatsBucket] = []
+    by_provider: list[StatsBucket] = []
+    by_app: list[StatsBucket] = []

@@ -410,6 +410,76 @@ défaut. **Streaming hors scope V4** (`stream` ignoré, réponse non-streamée).
 
 ---
 
+# LLM Cockpit — V5 (observabilité gateway, SQLite local)
+
+V5 **mesure** le trafic réel : chaque requête du gateway V4 est journalisée dans
+une base **SQLite locale**, et un **dashboard** affiche volume, latence et taux
+d'erreur. C'est ici — et pas avant — que SQLite entre dans le projet. Le journal
+d'actions V1 (`data/actions.jsonl`) reste distinct (deux mécanismes assumés).
+V0–V4 restent fonctionnels.
+
+```text
+V5 observe le trafic réel du gateway via SQLite local.
+V5 ne crée aucun jeu de tests (évaluations = V6).
+V5 ne logge pas le contenu des prompts par défaut.
+V5 reste local-first : aucun collecteur externe.
+```
+
+## Objectif V5
+
+- Logger chaque requête `/v1/chat/completions` (succès, refus ou erreur) :
+  `ts`, route, app appelante, rôle, provider, modèle, latence, statut,
+  `http_status`, tokens (si le provider les fournit), erreur.
+- Persister en **SQLite** (`data/cockpit.db`, WAL, schéma idempotent).
+- **Stats agrégées** : volume, taux d'erreur, latence p50/p95, répartition par
+  modèle / provider / app.
+- **Dashboard** `/dashboard` (HTMX, rafraîchi périodiquement).
+
+## Identification de l'app appelante
+
+En-tête **`X-Cockpit-App`** (sinon `null`). Choix figé : l'en-tête explicite est
+plus fiable que le `user-agent`. Une app cliente envoie `X-Cockpit-App: <nom>`.
+
+## PII : contenu des prompts
+
+Par défaut, **le contenu des prompts n'est pas stocké** (`LOG_PROMPTS=0`). Si
+activé, il est **tronqué** à `LOG_PROMPT_MAX_CHARS`. Le champ `prompt` n'est
+**jamais exposé** via `/api/logs` (omis du schéma `RequestLog`).
+
+## Best-effort
+
+Le logging ne fait **jamais** échouer une requête gateway : toute erreur d'écriture
+(DB verrouillée, backend indisponible) est avalée proprement. DB absente → créée
+au démarrage ; fenêtre de stats vide → zéros francs ; tokens absents → `None`
+(jamais inventés).
+
+## Nouveaux endpoints V5
+
+| Méthode / route          | Paramètres                                  | Réponse              |
+|--------------------------|---------------------------------------------|----------------------|
+| `GET /api/logs`          | `?limit&model&provider&app&status`          | `list[RequestLog]`   |
+| `GET /api/stats`         | `?window` (secondes)                        | `StatsSummary`       |
+| `GET /dashboard`         | —                                           | Page dashboard HTMX  |
+| `GET /partials/dashboard`| —                                           | Fragment HTMX        |
+
+Seules les requêtes `/v1/chat/completions` sont journalisées (le trafic
+d'inférence). `/v1/models` n'est pas loggé.
+
+## Persistance `data/cockpit.db`
+
+SQLite, table `request_log`, schéma idempotent (`app/db/schema.sql`), mode WAL.
+Gitignored (couvert par `data/`). Seul `app/db/store.py` accède à la base.
+
+## Variables d'environnement V5
+
+| Variable              | Défaut             | Rôle                                       |
+|-----------------------|--------------------|--------------------------------------------|
+| `DB_PATH`             | `data/cockpit.db`  | Emplacement de la base SQLite              |
+| `LOG_PROMPTS`         | `0`                | `1` → stocke le prompt (tronqué)           |
+| `LOG_PROMPT_MAX_CHARS`| `500`              | Troncature du prompt si `LOG_PROMPTS=1`    |
+
+---
+
 ## Tests
 
 ```bash
@@ -420,6 +490,7 @@ uv run pytest
 Les mocks interceptent le **transport HTTP brut** (`/api/tags`, `/api/ps`,
 `/api/generate`, `/api/chat`, `/v1/models`, `/v1/chat/completions`) : on teste le
 parsing réel des adapters, la conversion ns→ms, la logique de validation/journal,
-la persistance JSON réelle des rôles, l'agrégation/drift du registry, et la
-résolution de routage du gateway — jamais un mock d'interface. Aucun test ne
-dépend d'un provider local en cours d'exécution.
+la persistance JSON réelle des rôles, l'agrégation/drift du registry, la
+résolution de routage du gateway, et la persistance SQLite réelle des logs
+(insert/query, percentiles, best-effort) — jamais un mock d'interface. Aucun test
+ne dépend d'un provider local en cours d'exécution.

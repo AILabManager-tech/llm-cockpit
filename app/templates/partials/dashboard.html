@@ -1,0 +1,92 @@
+<div class="dashboard">
+  <section class="stat-cards">
+    <div class="stat-card">
+      <span class="stat-value">{{ summary.total }}</span>
+      <span class="stat-label">requêtes</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ summary.errors }}</span>
+      <span class="stat-label">erreurs</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">{{ "%.1f"|format(summary.error_rate * 100) }}%</span>
+      <span class="stat-label">taux d'erreur</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">
+        {{ "%.0f"|format(summary.latency_p50_ms) if summary.latency_p50_ms is not none else "—" }}
+      </span>
+      <span class="stat-label">latence p50 (ms)</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value">
+        {{ "%.0f"|format(summary.latency_p95_ms) if summary.latency_p95_ms is not none else "—" }}
+      </span>
+      <span class="stat-label">latence p95 (ms)</span>
+    </div>
+  </section>
+
+  <div class="stat-breakdowns">
+    {% for title, buckets in [("Par modèle", summary.by_model),
+                              ("Par provider", summary.by_provider),
+                              ("Par app", summary.by_app)] %}
+    <div class="breakdown">
+      <h3>{{ title }}</h3>
+      {% if not buckets %}
+        <p class="poll-note">—</p>
+      {% else %}
+      <table class="breakdown-table">
+        <tbody>
+          {% for b in buckets %}
+          <tr>
+            <td class="model-name">{{ b.key }}</td>
+            <td>{{ b.count }}</td>
+            <td class="{{ 'status-error' if b.error_count else '' }}">
+              {{ b.error_count }} err
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <h3>Dernières requêtes</h3>
+  {% if not logs %}
+    <p class="empty-state">Aucune requête gateway enregistrée.</p>
+  {% else %}
+  <table class="journal">
+    <thead>
+      <tr>
+        <th>Horodatage</th>
+        <th>App</th>
+        <th>Rôle</th>
+        <th>Provider</th>
+        <th>Modèle</th>
+        <th>Statut</th>
+        <th>Latence</th>
+        <th>Tokens (p/c)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in logs %}
+      <tr class="status-{{ r.status }}">
+        <td class="ts">{{ r.ts }}</td>
+        <td>{{ r.app or "—" }}</td>
+        <td>{{ r.resolved_role or "—" }}</td>
+        <td>{{ r.provider or "—" }}</td>
+        <td class="model-name">{{ r.model or "—" }}</td>
+        <td><span class="pill st-{{ r.status }}">{{ r.status }}</span></td>
+        <td>{{ "%.0f"|format(r.latency_ms) ~ " ms" if r.latency_ms is not none else "—" }}</td>
+        <td>
+          {{ r.prompt_tokens if r.prompt_tokens is not none else "—" }} /
+          {{ r.completion_tokens if r.completion_tokens is not none else "—" }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>

@@ -39,6 +39,8 @@ def _use_tmp(tmp_path, monkeypatch):
     monkeypatch.setattr(
         config, "PROVIDERS_CONFIG_PATH", str(tmp_path / "providers.json")
     )
+    # V5 : isole la base de logs gateway dans le tmp (pas d'écriture dans le repo).
+    monkeypatch.setattr(config, "DB_PATH", str(tmp_path / "cockpit.db"))
 
 
 def _assign(tmp_path, role, model, provider="ollama"):
