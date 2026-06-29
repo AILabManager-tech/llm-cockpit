@@ -12,7 +12,11 @@ from app.schemas import (
     ActionRequest,
     ActionResult,
     ModelInfo,
+    ProviderConfig,
     ProviderHealth,
+    ProviderRegisterRequest,
+    ProviderStatus,
+    RegistryDrift,
     RoleAssignment,
     RoleAssignRequest,
     RoleTestRequest,
@@ -21,6 +25,13 @@ from app.schemas import (
 from app.services import action_log
 from app.services.actions import ActionService
 from app.services.inventory import InventoryService
+from app.services.registry import (
+    DuplicateProviderError,
+    RegistryConfigError,
+    RegistryService,
+    UnknownProviderError,
+    UnknownProviderKindError,
+)
 from app.services.roles import (
     ModelNotInstalledError,
     RoleNotAssignedError,
@@ -55,6 +66,10 @@ def get_role_service() -> RoleService:
     return RoleService(inventory, ActionService(adapter, inventory))
 
 
+def get_registry() -> RegistryService:
+    return RegistryService()
+
+
 # --- JSON ---------------------------------------------------------------
 
 
@@ -65,7 +80,11 @@ async def api_health() -> ProviderHealth:
 
 @app.get("/api/models", response_model=list[ModelInfo])
 async def api_models() -> list[ModelInfo]:
-    return await get_inventory().get_inventory()
+    # V3 : inventaire agrégé multi-provider (forme list[ModelInfo] inchangée).
+    try:
+        return await get_registry().aggregate_inventory()
+    except RegistryConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @app.get("/api/models/installed", response_model=list[ModelInfo])
@@ -153,7 +172,76 @@ async def api_test_role(
     return result
 
 
+# --- V3 : registry multi-provider ---------------------------------------
+
+
+@app.get("/api/providers", response_model=list[ProviderStatus])
+async def api_providers() -> list[ProviderStatus]:
+    try:
+        return await get_registry().provider_statuses()
+    except RegistryConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/providers", response_model=ProviderConfig)
+async def api_register_provider(
+    payload: ProviderRegisterRequest, response: Response
+) -> ProviderConfig:
+    pc = ProviderConfig(
+        id=payload.id,
+        kind=payload.kind,
+        base_url=payload.base_url,
+        enabled=payload.enabled,
+    )
+    try:
+        registered = get_registry().register(pc)
+    except UnknownProviderKindError as exc:
+        raise HTTPException(
+            status_code=400, detail=f"kind de provider inconnu : {exc}"
+        ) from exc
+    except DuplicateProviderError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except RegistryConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    response.status_code = 201
+    return registered
+
+
+@app.delete("/api/providers/{provider_id}")
+async def api_remove_provider(provider_id: str) -> dict:
+    try:
+        get_registry().remove(provider_id)
+    except UnknownProviderError as exc:
+        raise HTTPException(
+            status_code=404, detail=f"provider inconnu : {exc}"
+        ) from exc
+    except RegistryConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"removed": provider_id}
+
+
+@app.get("/api/registry/drift", response_model=list[RegistryDrift])
+async def api_registry_drift() -> list[RegistryDrift]:
+    try:
+        return await get_registry().compute_drift()
+    except RegistryConfigError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 # --- HTML (HTMX) --------------------------------------------------------
+
+
+async def _providers_view() -> tuple[
+    list[ProviderStatus], list[RegistryDrift], str | None
+]:
+    """(statuts, drift, message d'erreur). N'explose jamais l'UI si corrompu."""
+    registry = get_registry()
+    try:
+        statuses = await registry.provider_statuses()
+        drift = await registry.compute_drift()
+        return statuses, drift, None
+    except RegistryConfigError as exc:
+        return [], [], str(exc)
 
 
 async def _roles_view() -> tuple[list[RoleAssignment], str | None]:
@@ -164,11 +252,20 @@ async def _roles_view() -> tuple[list[RoleAssignment], str | None]:
         return [], str(exc)
 
 
+async def _aggregate_models() -> list[ModelInfo]:
+    """Inventaire agrégé multi-provider ; [] si registry corrompu (UI robuste)."""
+    try:
+        return await get_registry().aggregate_inventory()
+    except RegistryConfigError:
+        return []
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
     health = await get_adapter().healthcheck()
-    models = await get_inventory().get_inventory()
+    models = await _aggregate_models()
     roles, roles_error = await _roles_view()
+    providers, drift, providers_error = await _providers_view()
     return templates.TemplateResponse(
         request,
         "inventory.html",
@@ -179,6 +276,9 @@ async def index(request: Request) -> HTMLResponse:
             "entries": action_log.read_entries(limit=50),
             "roles": roles,
             "roles_error": roles_error,
+            "providers": providers,
+            "drift": drift,
+            "providers_error": providers_error,
         },
     )
 
@@ -186,7 +286,7 @@ async def index(request: Request) -> HTMLResponse:
 @app.get("/partials/models", response_class=HTMLResponse)
 async def partials_models(request: Request) -> HTMLResponse:
     health = await get_adapter().healthcheck()
-    models = await get_inventory().get_inventory()
+    models = await _aggregate_models()
     return templates.TemplateResponse(
         request,
         "partials/models_table.html",
@@ -195,6 +295,16 @@ async def partials_models(request: Request) -> HTMLResponse:
             "models": models,
             "actions_enabled": config.ACTIONS_ENABLED,
         },
+    )
+
+
+@app.get("/partials/providers", response_class=HTMLResponse)
+async def partials_providers(request: Request) -> HTMLResponse:
+    providers, drift, providers_error = await _providers_view()
+    return templates.TemplateResponse(
+        request,
+        "partials/providers_panel.html",
+        {"providers": providers, "drift": drift, "providers_error": providers_error},
     )
 
 

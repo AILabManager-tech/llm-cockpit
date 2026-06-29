@@ -14,3 +14,8 @@ ACTION_LOG_PATH = os.path.join(DATA_DIR, "actions.jsonl")
 # --- V2 : rôles locaux (préférence déclarée, mono-provider Ollama) ------
 ROLES = ("chat", "code", "vision", "embedding", "fast", "quality", "experimental")
 ROLES_CONFIG_PATH = os.getenv("ROLES_CONFIG_PATH", os.path.join(DATA_DIR, "roles.json"))
+
+# --- V3 : registry multi-provider (JSON local, Ollama par défaut) -------
+PROVIDERS_CONFIG_PATH = os.getenv(
+    "PROVIDERS_CONFIG_PATH", os.path.join(DATA_DIR, "providers.json")
+)

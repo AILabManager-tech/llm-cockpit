@@ -31,7 +31,7 @@
             <option value="" disabled {% if not role.model %}selected{% endif %}>
               — non assigné —
             </option>
-            {% for m in models if m.installed %}
+            {% for m in models if m.installed and m.provider == "ollama" %}
             <option
               value="{{ m.normalized_name }}"
               {% if m.normalized_name == role.model %}selected{% endif %}>

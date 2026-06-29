@@ -243,3 +243,52 @@ table.roles-table select {
 
 .btn-action.test { border-color: var(--accent); color: var(--accent); }
 .btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* --- V3 : providers --- */
+
+.providers {
+  margin: 1.5rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.providers h2 { font-size: 1rem; margin: 0 0 0.6rem; }
+
+table.providers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+table.providers-table th,
+table.providers-table td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+table.providers-table th { color: var(--muted); font-weight: 600; }
+.providers-table .caps { color: var(--muted); }
+.row-drift { background: rgba(229, 72, 77, 0.07); }
+
+.provider-add {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
+}
+
+.provider-add input,
+.provider-add select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  font-size: 0.8rem;
+}

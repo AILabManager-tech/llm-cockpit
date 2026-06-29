@@ -1,0 +1,80 @@
+<div class="providers">
+  <h2>Providers</h2>
+  {% if providers_error %}
+    <p class="empty-state error">
+      Registry illisible : {{ providers_error }}
+      (le fichier n'est pas écrasé automatiquement.)
+    </p>
+  {% else %}
+  {% set drift_by_id = {} %}
+  {% for d in drift %}{% set _ = drift_by_id.update({d.provider_id: d}) %}{% endfor %}
+  <table class="providers-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Kind</th>
+        <th>Base URL</th>
+        <th>Activé</th>
+        <th>Statut</th>
+        <th>Modèles</th>
+        <th>Capacités</th>
+        <th>Drift</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in providers %}
+      {% set d = drift_by_id.get(p.id) %}
+      <tr class="{{ 'row-drift' if d and d.drift else '' }}">
+        <td class="model-name">{{ p.id }}</td>
+        <td>{{ p.kind }}</td>
+        <td class="base-url">{{ p.base_url }}</td>
+        <td>{{ "oui" if p.enabled else "non" }}</td>
+        <td>
+          {% if p.reachable %}
+            <span class="pill st-ok">joignable</span>
+          {% else %}
+            <span class="pill st-error">injoignable</span>
+          {% endif %}
+          {% if p.error %}<span class="status-error">{{ p.error }}</span>{% endif %}
+        </td>
+        <td>{{ p.model_count }}</td>
+        <td class="caps">
+          {% set c = p.capabilities %}
+          {% set flags = [] %}
+          {% if c.list_installed %}{% set _ = flags.append("installed") %}{% endif %}
+          {% if c.list_loaded %}{% set _ = flags.append("loaded") %}{% endif %}
+          {% if c.load %}{% set _ = flags.append("load") %}{% endif %}
+          {% if c.unload %}{% set _ = flags.append("unload") %}{% endif %}
+          {% if c.generate %}{% set _ = flags.append("generate") %}{% endif %}
+          {{ flags | join(", ") or "—" }}
+        </td>
+        <td>
+          {% if d and d.drift %}
+            <span class="pill st-error">drift</span>
+            <span class="status-error">{{ d.detail }}</span>
+          {% else %}
+            <span class="pill st-ok">ok</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <form
+    class="provider-add"
+    hx-post="/api/providers"
+    hx-ext="json-enc"
+    hx-swap="none"
+    hx-on::after-request="htmx.trigger('#providers-panel','refresh'); htmx.trigger('#models-panel','refresh')">
+    <input type="text" name="id" placeholder="id" aria-label="id du provider" required>
+    <select name="kind" aria-label="kind du provider">
+      <option value="openai_compat">openai_compat</option>
+      <option value="ollama">ollama</option>
+    </select>
+    <input type="text" name="base_url" placeholder="http://127.0.0.1:1234"
+           aria-label="base_url" required>
+    <button type="submit" class="btn-refresh">Ajouter</button>
+  </form>
+  {% endif %}
+</div>

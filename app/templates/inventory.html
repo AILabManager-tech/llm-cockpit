@@ -13,6 +13,14 @@
 </section>
 
 <div
+  id="providers-panel"
+  hx-get="/partials/providers"
+  hx-trigger="every 10s, refresh"
+  hx-swap="innerHTML">
+  {% include "partials/providers_panel.html" %}
+</div>
+
+<div
   id="models-panel"
   hx-get="/partials/models"
   hx-trigger="every 5s, refresh"

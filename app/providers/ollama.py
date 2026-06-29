@@ -9,6 +9,7 @@ from app.schemas import (
     GenerateRequest,
     GenerateResult,
     ModelInfo,
+    ProviderCapabilities,
     ProviderHealth,
 )
 from app.services.inventory import normalize_name
@@ -72,6 +73,16 @@ class OllamaAdapter(ProviderAdapter):
 
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
+
+    def capabilities(self) -> ProviderCapabilities:
+        # Ollama supporte tout le contrat (natif).
+        return ProviderCapabilities(
+            list_installed=True,
+            list_loaded=True,
+            load=True,
+            unload=True,
+            generate=True,
+        )
 
     def _client(self) -> httpx.AsyncClient:
         return httpx.AsyncClient(base_url=self.base_url, timeout=_TIMEOUT)

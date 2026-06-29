@@ -24,6 +24,7 @@
     <thead>
       <tr>
         <th>Modèle</th>
+        <th>Provider</th>
         <th>État</th>
         <th>Source</th>
         <th>Famille</th>
@@ -40,6 +41,7 @@
       {% for m in models %}
       <tr class="{{ 'row-loaded' if m.loaded else 'row-idle' }}">
         <td class="model-name">{{ m.normalized_name }}</td>
+        <td><span class="pill src">{{ m.provider }}</span></td>
         <td>
           {% if m.loaded %}
             <span class="pill loaded">chargé</span>
@@ -62,7 +64,7 @@
         <td>{{ m.modified_at or "—" }}</td>
         <td>{{ m.expires_at or "—" }}</td>
         <td class="row-actions">
-          {% if actions_enabled %}
+          {% if actions_enabled and m.provider == "ollama" %}
             {% if m.loaded %}
             <button
               class="btn-action unload"
