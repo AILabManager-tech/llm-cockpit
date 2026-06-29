@@ -19,3 +19,7 @@ ROLES_CONFIG_PATH = os.getenv("ROLES_CONFIG_PATH", os.path.join(DATA_DIR, "roles
 PROVIDERS_CONFIG_PATH = os.getenv(
     "PROVIDERS_CONFIG_PATH", os.path.join(DATA_DIR, "providers.json")
 )
+
+# --- V4 : gateway OpenAI-compatible (local uniquement) ------------------
+GATEWAY_ENABLED = os.getenv("GATEWAY_ENABLED", "1") not in {"0", "false", "False"}
+GATEWAY_DEFAULT_ROLE = os.getenv("GATEWAY_DEFAULT_ROLE", "chat")

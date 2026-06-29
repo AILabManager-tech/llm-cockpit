@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 
 from app.schemas import (
     ActionResult,
+    ChatRequest,
+    ChatResult,
     GenerateRequest,
     GenerateResult,
     ModelInfo,
@@ -35,3 +37,8 @@ class ProviderAdapter(ABC):
 
     @abstractmethod
     def capabilities(self) -> ProviderCapabilities: ...
+
+    # --- V4 : chat (subset OpenAI) --------------------------------------
+
+    @abstractmethod
+    async def chat(self, req: ChatRequest) -> ChatResult: ...

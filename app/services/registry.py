@@ -134,6 +134,13 @@ class RegistryService:
         except UnknownProviderKindError:
             return None
 
+    def adapter_for(self, provider_id: str) -> ProviderAdapter | None:
+        """Adapter d'un provider du registry par id (None si absent/kind inconnu)."""
+        for pc in _read_providers():
+            if pc.id == provider_id:
+                return self._safe_adapter(pc)
+        return None
+
     async def aggregate_inventory(self) -> list[ModelInfo]:
         """Inventaire agrégé sur tous les providers activés (concaténation).
 

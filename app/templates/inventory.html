@@ -36,6 +36,14 @@
   {% include "partials/roles_panel.html" %}
 </div>
 
+<div
+  id="gateway-panel"
+  hx-get="/partials/gateway"
+  hx-trigger="every 10s, refresh"
+  hx-swap="innerHTML">
+  {% include "partials/gateway_panel.html" %}
+</div>
+
 {% if actions_enabled %}
 <section class="actions-controls">
   <h2>Tester un modèle</h2>

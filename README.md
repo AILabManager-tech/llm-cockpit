@@ -341,6 +341,75 @@ d'un second provider.
 
 ---
 
+# LLM Cockpit — V4 (gateway OpenAI-compatible local)
+
+V4 expose un **point d'entrée unique** : un endpoint local compatible OpenAI.
+Une application ne parle plus à Ollama ; elle parle au cockpit avec un nom de
+**rôle** (ou un modèle réel), et le cockpit route vers le bon provider/modèle.
+V0–V3 restent fonctionnels.
+
+```text
+V4 expose un gateway OpenAI minimal, local uniquement.
+V4 route par rôle ; il ne mesure pas encore (observabilité = V5).
+V4 ne fait ni RAG, ni évaluation, ni fine-tuning.
+V4 ne s'expose pas au réseau par défaut (127.0.0.1).
+```
+
+## Objectif V4
+
+- `POST /v1/chat/completions` : `model` peut être un **rôle** (`"code"` ou
+  `"role:code"`) résolu via les rôles V2/V3, ou un **modèle réel**.
+- Réponse au format OpenAI minimal (`choices[].message`, `usage` si disponible),
+  plus une métadonnée `x_cockpit_route` (provider/modèle résolus).
+- `GET /v1/models` : modèles réels agrégés **+ alias de rôles** (`role:chat`…).
+- `GET /api/routes` : table de routage consultable (ce que chaque rôle résout).
+- Routage strict : ne route que vers un modèle **réellement présent** chez un
+  provider **joignable** (présent dans l'inventaire agrégé V3). Aucun fallback
+  silencieux — un rôle non assigné ou un modèle absent donne une erreur claire.
+
+## Routage
+
+`model` reçu →
+
+1. nom de rôle (`role:NAME` ou `NAME` ∈ rôles V2) → résout l'assignation
+   `(provider, model)` du rôle, vérifie sa présence dans l'agrégat ;
+2. sinon, modèle réel → cherche le `(provider, model)` correspondant dans
+   l'agrégat.
+
+Le résultat est une `RouteDecision{requested, resolved_role, provider, model,
+ok, reason}`. `model` absent dans la requête → rôle par défaut
+`GATEWAY_DEFAULT_ROLE`.
+
+## Nouveaux endpoints V4
+
+| Méthode / route             | Corps / effet                                          |
+|-----------------------------|--------------------------------------------------------|
+| `POST /v1/chat/completions` | `{model?, messages[]}` → complétion OpenAI routée      |
+| `GET  /v1/models`           | modèles réels + alias `role:*`                         |
+| `GET  /api/routes`          | `list[RouteDecision]` (résolution par rôle)            |
+| `GET  /partials/gateway`    | Fragment HTMX du panneau Gateway                       |
+
+Codes / erreurs (format OpenAI, objet `error`) : rôle non assigné / modèle
+inexistant → **400** ; provider injoignable pendant le chat → **502** ;
+`GATEWAY_ENABLED=0` → **404** sur `/v1/*`. Jamais de stacktrace exposée.
+
+## Traduction interne
+
+- provider `ollama` → `POST /api/chat` (API native, `stream:false`) ;
+- provider `openai_compat` → `POST /v1/chat/completions`.
+
+Le gateway est **local uniquement** (`127.0.0.1`), jamais exposé au réseau par
+défaut. **Streaming hors scope V4** (`stream` ignoré, réponse non-streamée).
+
+## Variables d'environnement V4
+
+| Variable               | Défaut  | Rôle                                        |
+|------------------------|---------|---------------------------------------------|
+| `GATEWAY_ENABLED`      | `1`     | `0`/`false` → `/v1/*` en 404                |
+| `GATEWAY_DEFAULT_ROLE` | `chat`  | Rôle utilisé si la requête n'a pas de `model` |
+
+---
+
 ## Tests
 
 ```bash
@@ -349,8 +418,8 @@ uv run pytest
 ```
 
 Les mocks interceptent le **transport HTTP brut** (`/api/tags`, `/api/ps`,
-`/api/generate`, `/v1/models`, `/v1/chat/completions`) : on teste le parsing réel
-des adapters `OllamaAdapter` et `OpenAICompatAdapter`, la conversion ns→ms, la
-logique de validation/journal, la persistance JSON réelle des rôles, et
-l'agrégation/drift du registry — jamais un mock d'interface. Aucun test ne dépend
-d'un provider local en cours d'exécution.
+`/api/generate`, `/api/chat`, `/v1/models`, `/v1/chat/completions`) : on teste le
+parsing réel des adapters, la conversion ns→ms, la logique de validation/journal,
+la persistance JSON réelle des rôles, l'agrégation/drift du registry, et la
+résolution de routage du gateway — jamais un mock d'interface. Aucun test ne
+dépend d'un provider local en cours d'exécution.

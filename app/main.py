@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app import config
+from app.gateway.openai import router as gateway_router
 from app.providers.ollama import OllamaAdapter
 from app.schemas import (
     ActionLogEntry,
@@ -20,6 +21,7 @@ from app.schemas import (
     RoleAssignment,
     RoleAssignRequest,
     RoleTestRequest,
+    RouteDecision,
     TestRequest,
 )
 from app.services import action_log
@@ -39,12 +41,16 @@ from app.services.roles import (
     RolesConfigError,
     UnknownRoleError,
 )
+from app.services.routing import RoutingService
 
 BASE_DIR = Path(__file__).resolve().parent
 
-app = FastAPI(title="LLM Cockpit V0", description="Inventaire Ollama, lecture seule.")
+app = FastAPI(title="LLM Cockpit", description="Cockpit local-first multi-LLM.")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+
+# V4 : gateway OpenAI-compatible (routes /v1/*), local uniquement.
+app.include_router(gateway_router)
 
 
 def get_adapter() -> OllamaAdapter:
@@ -68,6 +74,10 @@ def get_role_service() -> RoleService:
 
 def get_registry() -> RegistryService:
     return RegistryService()
+
+
+def get_routing() -> RoutingService:
+    return RoutingService(get_registry())
 
 
 # --- JSON ---------------------------------------------------------------
@@ -228,7 +238,26 @@ async def api_registry_drift() -> list[RegistryDrift]:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+# --- V4 : table de routage (résolution rôle → provider/modèle) ----------
+
+
+@app.get("/api/routes", response_model=list[RouteDecision])
+async def api_routes() -> list[RouteDecision]:
+    try:
+        return await get_routing().routing_table()
+    except (RegistryConfigError, RolesConfigError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 # --- HTML (HTMX) --------------------------------------------------------
+
+
+async def _gateway_view() -> tuple[list[RouteDecision], str | None]:
+    """(table de routage, message d'erreur). N'explose jamais l'UI."""
+    try:
+        return await get_routing().routing_table(), None
+    except (RegistryConfigError, RolesConfigError) as exc:
+        return [], str(exc)
 
 
 async def _providers_view() -> tuple[
@@ -266,6 +295,7 @@ async def index(request: Request) -> HTMLResponse:
     models = await _aggregate_models()
     roles, roles_error = await _roles_view()
     providers, drift, providers_error = await _providers_view()
+    routes, gateway_error = await _gateway_view()
     return templates.TemplateResponse(
         request,
         "inventory.html",
@@ -279,6 +309,9 @@ async def index(request: Request) -> HTMLResponse:
             "providers": providers,
             "drift": drift,
             "providers_error": providers_error,
+            "routes": routes,
+            "gateway_error": gateway_error,
+            "gateway_enabled": config.GATEWAY_ENABLED,
         },
     )
 
@@ -328,6 +361,20 @@ async def partials_roles(request: Request) -> HTMLResponse:
         request,
         "partials/roles_panel.html",
         {"models": models, "roles": roles, "roles_error": roles_error},
+    )
+
+
+@app.get("/partials/gateway", response_class=HTMLResponse)
+async def partials_gateway(request: Request) -> HTMLResponse:
+    routes, gateway_error = await _gateway_view()
+    return templates.TemplateResponse(
+        request,
+        "partials/gateway_panel.html",
+        {
+            "routes": routes,
+            "gateway_error": gateway_error,
+            "gateway_enabled": config.GATEWAY_ENABLED,
+        },
     )
 
 

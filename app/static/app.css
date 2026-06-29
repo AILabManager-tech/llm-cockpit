@@ -292,3 +292,31 @@ table.providers-table th { color: var(--muted); font-weight: 600; }
   font: inherit;
   font-size: 0.8rem;
 }
+
+/* --- V4 : gateway --- */
+
+.gateway {
+  margin: 1.5rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.gateway h2 { font-size: 1rem; margin: 0 0 0.4rem; }
+
+table.routes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-top: 0.6rem;
+}
+
+table.routes-table th,
+table.routes-table td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+table.routes-table th { color: var(--muted); font-weight: 600; }
