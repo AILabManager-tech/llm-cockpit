@@ -37,3 +37,12 @@ EVALS_DIR = os.getenv(
     "EVALS_DIR", os.path.join(os.path.dirname(__file__), "evals", "suites")
 )
 EVAL_RESPONSE_PREVIEW_MAX = int(os.getenv("EVAL_RESPONSE_PREVIEW_MAX", "500"))
+
+# --- V7 : RAG local mesuré ----------------------------------------------
+# Documents ingérés = locaux, gitignored, jamais committés (PII).
+RAG_DOCS_DIR = os.getenv("RAG_DOCS_DIR", os.path.join(DATA_DIR, "rag", "docs"))
+RAG_EMBED_MODEL = os.getenv("RAG_EMBED_MODEL", "nomic-embed-text")
+RAG_TOP_K = int(os.getenv("RAG_TOP_K", "4"))
+RAG_CHUNK_SIZE = int(os.getenv("RAG_CHUNK_SIZE", "800"))
+RAG_CHUNK_OVERLAP = int(os.getenv("RAG_CHUNK_OVERLAP", "100"))
+RAG_SOURCE_PREVIEW_MAX = int(os.getenv("RAG_SOURCE_PREVIEW_MAX", "240"))

@@ -247,3 +247,17 @@ class OllamaAdapter(ProviderAdapter):
                 message=ChatMessage(role="assistant", content=""),
                 error=_action_error_detail(exc),
             )
+
+    # --- V7 : embeddings via POST /api/embeddings -----------------------
+
+    async def embed(self, model: str, text: str) -> list[float]:
+        """Retourne l'embedding d'un texte. Lève httpx.HTTPError si échec."""
+        body = {"model": model, "prompt": text}
+        async with self._action_client() as client:
+            resp = await client.post("/api/embeddings", json=body)
+            resp.raise_for_status()
+            data = resp.json()
+        embedding = data.get("embedding")
+        if not isinstance(embedding, list):
+            return []
+        return [float(x) for x in embedding]

@@ -1,0 +1,72 @@
+<div class="rag">
+  <h3>RAG local <span class="poll-note">embeddings : {{ embed_model }}</span></h3>
+
+  <form
+    class="rag-ingest-form"
+    hx-post="/api/rag/ingest"
+    hx-ext="json-enc"
+    hx-swap="none"
+    hx-on::after-request="htmx.trigger('#rag-panel','refresh')">
+    <input
+      type="text"
+      name="path"
+      placeholder="fichier sous data/rag/docs (ex. notes.md)"
+      aria-label="Chemin du document">
+    <button type="submit" class="btn-refresh">Ingérer</button>
+  </form>
+  <p class="poll-note">
+    Les documents ingérés restent locaux (data/rag/), jamais committés.
+  </p>
+
+  {% if not documents %}
+    <p class="empty-state">Aucun document ingéré.</p>
+  {% else %}
+  <table class="rag-docs-table">
+    <thead>
+      <tr><th>#</th><th>Document</th><th>Chunks</th><th>Dim</th><th>Modèle</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for d in documents %}
+      <tr>
+        <td>{{ d.id }}</td>
+        <td class="model-name">{{ d.name }}</td>
+        <td>{{ d.chunks }}</td>
+        <td>{{ d.dim if d.dim is not none else "—" }}</td>
+        <td>{{ d.embed_model }}</td>
+        <td>
+          <button
+            class="btn-action unload"
+            hx-delete="/api/rag/documents/{{ d.id }}"
+            hx-swap="none"
+            hx-on::after-request="htmx.trigger('#rag-panel','refresh')">
+            Retirer
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h4>Interroger les documents</h4>
+  <form
+    class="rag-query-form"
+    hx-post="/partials/rag/query"
+    hx-ext="json-enc"
+    hx-target="#rag-answer"
+    hx-swap="innerHTML">
+    <input
+      type="text"
+      name="query"
+      placeholder="question…"
+      aria-label="Question RAG"
+      required>
+    <input
+      type="text"
+      name="role"
+      placeholder="rôle (optionnel, ex. chat)"
+      aria-label="Rôle">
+    <button type="submit" class="btn-refresh">Demander</button>
+  </form>
+  <div id="rag-answer"></div>
+</div>

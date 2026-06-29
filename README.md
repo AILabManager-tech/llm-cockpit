@@ -556,6 +556,81 @@ down → cas `error` isolé. Réponses stockées **tronquées** (`response_previ
 
 ---
 
+# LLM Cockpit — V7 (RAG local mesuré)
+
+V7 connecte les modèles à des **données locales** et **vérifie** que ça aide :
+ingestion → embeddings → store vectoriel local → retrieval → génération
+augmentée **avec sources**, puis **comparaison RAG vs non-RAG via le harness V6**.
+Le RAG n'est pas supposé meilleur : il est mesuré. V0–V6 restent fonctionnels.
+
+```text
+V7 répond à partir de documents locaux, avec sources.
+V7 mesure le RAG vs non-RAG ; il ne le suppose pas meilleur.
+V7 garde un store vectoriel local (aucune base vectorielle serveur).
+V7 ne fait aucun fine-tuning.
+```
+
+## Pipeline explicite (étapes testables)
+
+`ingest` (parse txt/md/pdf + chunking déterministe) → `embed`
+(Ollama `/api/embeddings`) → `store` (SQLite) → `query` (retrieval cosinus +
+prompt augmenté + génération via le routage V4) → `eval_bridge` (branche
+RAG/non-RAG dans le runner V6). Aucun framework RAG opaque.
+
+## Store vectoriel local
+
+Tables `rag_document` / `rag_chunk` dans `data/cockpit.db`. Les embeddings sont
+stockés en JSON ; la **similarité cosinus est calculée en Python** au retrieval.
+**Décision figée** : pas d'extension native `sqlite-vec` (extension binaire
+nécessitant `enable_load_extension`, souvent désactivée et non portable). Un
+cosinus pur-Python sur SQLite local satisfait « store vectoriel local, aucune
+base serveur, local-first » et reste testable sans dépendance native.
+
+## Sécurité & honnêteté
+
+- Documents ingérés **locaux** (`data/rag/docs/`), gitignored, jamais committés.
+- Ingestion **restreinte** à `RAG_DOCS_DIR` (traversée `..` refusée).
+- Réponses RAG **citent leurs sources** (`doc#chunk` + score).
+- Aucun chunk pertinent → réponse honnête « pas de source », pas d'hallucination.
+- Modèle d'embedding absent → erreur claire, jamais d'invention.
+- Aucun contenu de document n'est exécuté.
+
+## Mesure RAG vs non-RAG
+
+`POST /api/rag/eval {suite, with_rag}` rejoue la **même suite V6** soit telle
+quelle (non-RAG), soit avec chaque prompt augmenté du contexte récupéré (RAG).
+Le run RAG est tagué `role = "<role>+rag"` → **distinct dans le scoreboard**.
+Comparer = lancer les deux et lire le scoreboard.
+
+## Nouveaux endpoints V7
+
+| Méthode / route                | Corps / effet                                   |
+|--------------------------------|-------------------------------------------------|
+| `POST   /api/rag/ingest`       | `{path}` → `RagDocument`                         |
+| `GET    /api/rag/documents`    | `list[RagDocument]`                              |
+| `DELETE /api/rag/documents/{id}` | retire un doc (+ ses chunks)                  |
+| `POST   /api/rag/query`        | `{query, role?}` → `RagAnswer` (avec sources)    |
+| `POST   /api/rag/eval`         | `{suite, with_rag, models[]}` → `EvalRunSummary` |
+| `GET    /partials/rag`         | Fragment HTMX (documents + formulaires)          |
+| `POST   /partials/rag/query`   | Fragment HTMX (réponse RAG rendue)               |
+
+Codes : chemin hors dossier / fichier absent / modèle d'embedding absent →
+**400** ; backend d'embeddings injoignable → **502** ; document inconnu (DELETE)
+→ **404**.
+
+## Variables d'environnement V7
+
+| Variable                | Défaut                | Rôle                                   |
+|-------------------------|-----------------------|----------------------------------------|
+| `RAG_DOCS_DIR`          | `data/rag/docs`       | Dossier autorisé pour l'ingestion      |
+| `RAG_EMBED_MODEL`       | `nomic-embed-text`    | Modèle d'embedding (doit être installé)|
+| `RAG_TOP_K`             | `4`                   | Nombre de chunks récupérés             |
+| `RAG_CHUNK_SIZE`        | `800`                 | Taille de chunk (caractères)           |
+| `RAG_CHUNK_OVERLAP`     | `100`                 | Recouvrement entre chunks              |
+| `RAG_SOURCE_PREVIEW_MAX`| `240`                 | Troncature de l'aperçu de source       |
+
+---
+
 ## Tests
 
 ```bash
@@ -568,5 +643,6 @@ Les mocks interceptent le **transport HTTP brut** (`/api/tags`, `/api/ps`,
 parsing réel des adapters, la conversion ns→ms, la logique de validation/journal,
 la persistance JSON réelle des rôles, l'agrégation/drift du registry, la
 résolution de routage du gateway, la persistance SQLite réelle des logs, les
-checks déterministes, le runner d'éval et l'agrégation du scoreboard — jamais un
-mock d'interface. Aucun test ne dépend d'un provider local en cours d'exécution.
+checks déterministes, le runner d'éval, l'agrégation du scoreboard, le chunking,
+le cosinus/retrieval RAG et le bridge RAG↔éval — jamais un mock d'interface.
+Aucun test ne dépend d'un provider local en cours d'exécution.

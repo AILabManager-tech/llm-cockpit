@@ -28,4 +28,12 @@
   hx-swap="innerHTML">
   {% include "partials/scoreboard.html" %}
 </div>
+
+<div
+  id="rag-panel"
+  hx-get="/partials/rag"
+  hx-trigger="refresh"
+  hx-swap="innerHTML">
+  {% include "partials/rag_panel.html" %}
+</div>
 {% endblock %}
