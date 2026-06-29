@@ -1,0 +1,67 @@
+<div class="provider-status {{ 'ok' if health.reachable else 'down' }}">
+  <span class="dot"></span>
+  <strong>Ollama</strong>
+  <span class="status-label">
+    {{ 'joignable' if health.reachable else 'injoignable' }}
+  </span>
+  <code class="base-url">{{ health.base_url }}</code>
+  {% if not health.reachable and health.error %}
+    <span class="status-error">{{ health.error }}</span>
+  {% endif %}
+</div>
+
+{% if not health.reachable %}
+  <p class="empty-state error">
+    Ollama est injoignable. Aucun inventaire disponible.
+    Vérifie que le service écoute sur <code>{{ health.base_url }}</code>.
+  </p>
+{% elif models|length == 0 %}
+  <p class="empty-state">
+    Ollama est joignable, mais aucun modèle n'est installé.
+  </p>
+{% else %}
+  <table class="models">
+    <thead>
+      <tr>
+        <th>Modèle</th>
+        <th>État</th>
+        <th>Source</th>
+        <th>Famille</th>
+        <th>Quant.</th>
+        <th>Taille</th>
+        <th>VRAM</th>
+        <th>Digest</th>
+        <th>Modifié</th>
+        <th>Expire</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in models %}
+      <tr class="{{ 'row-loaded' if m.loaded else 'row-idle' }}">
+        <td class="model-name">{{ m.normalized_name }}</td>
+        <td>
+          {% if m.loaded %}
+            <span class="pill loaded">chargé</span>
+          {% else %}
+            <span class="pill idle">non chargé</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if m.source == "ps_only" %}
+            <span class="pill ps-only">ps_only</span>
+          {% else %}
+            <span class="pill src">{{ m.source }}</span>
+          {% endif %}
+        </td>
+        <td>{{ m.family or "—" }}</td>
+        <td>{{ m.quantization or "—" }}</td>
+        <td>{{ m.size if m.size is not none else "—" }}</td>
+        <td>{{ m.size_vram if m.size_vram is not none else "—" }}</td>
+        <td class="digest">{{ (m.digest[:12] ~ "…") if m.digest else "—" }}</td>
+        <td>{{ m.modified_at or "—" }}</td>
+        <td>{{ m.expires_at or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endif %}
