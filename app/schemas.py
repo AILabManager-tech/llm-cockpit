@@ -136,3 +136,35 @@ class ProviderRegisterRequest(BaseModel):
     kind: str
     base_url: str
     enabled: bool = True
+
+
+# --- V4 : gateway OpenAI-compatible (chat + routage) --------------------
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequest(BaseModel):
+    # `model` peut être un nom de rôle ("code", "role:code") ou un modèle réel.
+    model: str | None = None
+    messages: list[ChatMessage]
+    stream: bool = False            # streaming hors scope V4 : ignoré
+
+
+class ChatResult(BaseModel):
+    model: str
+    message: ChatMessage
+    finish_reason: str | None = None
+    usage: dict[str, Any] | None = None
+    error: str | None = None
+
+
+class RouteDecision(BaseModel):
+    requested: str
+    resolved_role: str | None = None
+    provider: str | None = None
+    model: str | None = None
+    ok: bool
+    reason: str

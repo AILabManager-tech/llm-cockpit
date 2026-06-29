@@ -6,6 +6,9 @@ from app import config
 from app.providers.base import ProviderAdapter
 from app.schemas import (
     ActionResult,
+    ChatMessage,
+    ChatRequest,
+    ChatResult,
     GenerateRequest,
     GenerateResult,
     ModelInfo,
@@ -207,5 +210,40 @@ class OllamaAdapter(ProviderAdapter):
                 model=req.model,
                 response="",
                 done=False,
+                error=_action_error_detail(exc),
+            )
+
+    # --- V4 : chat via POST /api/chat (API native) ----------------------
+
+    async def chat(self, req: ChatRequest) -> ChatResult:
+        body = {
+            "model": req.model,
+            "messages": [m.model_dump() for m in req.messages],
+            "stream": False,
+        }
+        try:
+            async with self._action_client() as client:
+                resp = await client.post("/api/chat", json=body)
+                resp.raise_for_status()
+                data = resp.json()
+            msg = data.get("message") or {}
+            return ChatResult(
+                model=data.get("model", req.model),
+                message=ChatMessage(
+                    role=msg.get("role", "assistant"),
+                    content=msg.get("content", "") or "",
+                ),
+                finish_reason="stop" if data.get("done") else None,
+                usage={
+                    "prompt_tokens": data.get("prompt_eval_count"),
+                    "completion_tokens": data.get("eval_count"),
+                    "total_duration_ms": _ns_to_ms(data.get("total_duration")),
+                },
+            )
+        except httpx.HTTPError as exc:
+            logger.warning("chat(%s) a échoué : %s", req.model, exc)
+            return ChatResult(
+                model=req.model,
+                message=ChatMessage(role="assistant", content=""),
                 error=_action_error_detail(exc),
             )

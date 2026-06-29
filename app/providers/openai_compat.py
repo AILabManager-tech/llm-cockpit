@@ -19,6 +19,9 @@ from app import config
 from app.providers.base import ProviderAdapter
 from app.schemas import (
     ActionResult,
+    ChatMessage,
+    ChatRequest,
+    ChatResult,
     GenerateRequest,
     GenerateResult,
     ModelInfo,
@@ -160,4 +163,37 @@ class OpenAICompatAdapter(ProviderAdapter):
             logger.warning("generate(%s) a échoué : %s", req.model, exc)
             return GenerateResult(
                 model=req.model, response="", done=False, error=_error_detail(exc)
+            )
+
+    # --- V4 : chat via POST /v1/chat/completions ------------------------
+
+    async def chat(self, req: ChatRequest) -> ChatResult:
+        body = {
+            "model": req.model,
+            "messages": [m.model_dump() for m in req.messages],
+            "stream": False,
+        }
+        try:
+            async with self._action_client() as client:
+                resp = await client.post("/v1/chat/completions", json=body)
+                resp.raise_for_status()
+                data = resp.json()
+            choices = data.get("choices") or []
+            choice = choices[0] if choices else {}
+            msg = choice.get("message") or {}
+            return ChatResult(
+                model=data.get("model", req.model),
+                message=ChatMessage(
+                    role=msg.get("role", "assistant"),
+                    content=msg.get("content", "") or "",
+                ),
+                finish_reason=choice.get("finish_reason"),
+                usage=data.get("usage"),
+            )
+        except httpx.HTTPError as exc:
+            logger.warning("chat(%s) a échoué : %s", req.model, exc)
+            return ChatResult(
+                model=req.model,
+                message=ChatMessage(role="assistant", content=""),
+                error=_error_detail(exc),
             )

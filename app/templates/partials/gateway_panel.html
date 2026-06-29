@@ -1,0 +1,52 @@
+<div class="gateway">
+  <h2>
+    Gateway
+    {% if gateway_enabled %}
+      <span class="pill st-ok">actif</span>
+    {% else %}
+      <span class="pill st-error">désactivé</span>
+    {% endif %}
+  </h2>
+  <p class="poll-note">
+    Endpoint local OpenAI-compatible :
+    <code>POST /v1/chat/completions</code> · <code>GET /v1/models</code>.
+    Une app appelle <code>model:"&lt;rôle&gt;"</code> ou un modèle réel.
+  </p>
+
+  {% if gateway_error %}
+    <p class="empty-state error">Routage indisponible : {{ gateway_error }}</p>
+  {% else %}
+  <table class="routes-table">
+    <thead>
+      <tr>
+        <th>Requête (rôle)</th>
+        <th>Résout vers</th>
+        <th>Statut</th>
+        <th>Raison</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in routes %}
+      <tr class="{{ '' if r.ok else 'row-drift' }}">
+        <td class="model-name">{{ r.requested }}</td>
+        <td>
+          {% if r.provider and r.model %}
+            {{ r.provider }} / {{ r.model }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td>
+          {% if r.ok %}
+            <span class="pill st-ok">routable</span>
+          {% else %}
+            <span class="pill st-error">non routable</span>
+          {% endif %}
+        </td>
+        <td class="detail">{{ r.reason }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>
