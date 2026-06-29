@@ -319,3 +319,65 @@ class RagEvalRequest(BaseModel):
     @classmethod
     def _split_csv(cls, value):
         return _csv_to_list(value)
+
+
+# --- V8 : orchestration d'adaptation LoRA/QLoRA -------------------------
+
+
+class Dataset(BaseModel):
+    id: int
+    ts: str
+    name: str
+    path: str
+    rows: int
+    status: str
+    detail: str | None = None
+
+
+class TrainJob(BaseModel):
+    id: int
+    ts: str
+    dataset_id: int
+    base_model: str
+    method: str
+    status: str            # pending|running|done|failed|cancelled|dry_run
+    version_id: int | None = None
+    log_tail: str | None = None
+
+
+class ModelVersion(BaseModel):
+    id: int
+    ts: str
+    base_model: str
+    method: str | None = None
+    adapter_path: str | None = None
+    status: str            # "baseline" | "candidate"
+    is_baseline: bool = False
+    active: bool = False
+    eval_run_id: int | None = None
+    pass_rate: float | None = None
+    job_id: int | None = None
+
+
+# Corps de requête V8.
+class DatasetCreateRequest(BaseModel):
+    name: str
+    path: str
+
+
+class TrainRequest(BaseModel):
+    dataset_id: int
+    base_model: str | None = None
+    method: str = "lora"
+
+
+class VersionEvalRequest(BaseModel):
+    eval_run_id: int
+
+
+class PromoteRequest(BaseModel):
+    version_id: int
+
+
+class RollbackRequest(BaseModel):
+    version_id: int

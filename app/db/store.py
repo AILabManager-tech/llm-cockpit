@@ -185,3 +185,170 @@ def fetch_eval_results(role: str | None = None) -> list[dict]:
         rows = conn.execute(f"SELECT {cols} FROM eval_result").fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+# --- V8 : datasets / jobs / versions ------------------------------------
+
+
+def insert_dataset(
+    *, ts: str, name: str, path: str, rows: int, status: str, detail: str | None
+) -> int:
+    conn = connect()
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO dataset (ts, name, path, rows, status, detail) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (ts, name, path, rows, status, detail),
+        )
+        dataset_id = cur.lastrowid
+    conn.close()
+    return dataset_id
+
+
+def list_datasets() -> list[dict]:
+    conn = connect()
+    rows = conn.execute("SELECT * FROM dataset ORDER BY id DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_dataset(dataset_id: int) -> dict | None:
+    conn = connect()
+    row = conn.execute(
+        "SELECT * FROM dataset WHERE id = ?", (dataset_id,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def insert_train_job(
+    *, ts: str, dataset_id: int, base_model: str, method: str, status: str
+) -> int:
+    conn = connect()
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO train_job (ts, dataset_id, base_model, method, status) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (ts, dataset_id, base_model, method, status),
+        )
+        job_id = cur.lastrowid
+    conn.close()
+    return job_id
+
+
+def update_train_job(
+    job_id: int, *, status: str | None = None, version_id: int | None = None,
+    log_tail: str | None = None,
+) -> None:
+    sets, params = [], []
+    if status is not None:
+        sets.append("status = ?")
+        params.append(status)
+    if version_id is not None:
+        sets.append("version_id = ?")
+        params.append(version_id)
+    if log_tail is not None:
+        sets.append("log_tail = ?")
+        params.append(log_tail)
+    if not sets:
+        return
+    params.append(job_id)
+    conn = connect()
+    with conn:
+        conn.execute(
+            f"UPDATE train_job SET {', '.join(sets)} WHERE id = ?", params
+        )
+    conn.close()
+
+
+def get_train_job(job_id: int) -> dict | None:
+    conn = connect()
+    row = conn.execute(
+        "SELECT * FROM train_job WHERE id = ?", (job_id,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def list_train_jobs() -> list[dict]:
+    conn = connect()
+    rows = conn.execute("SELECT * FROM train_job ORDER BY id DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def insert_model_version(
+    *, ts: str, base_model: str, method: str | None, adapter_path: str | None,
+    status: str, is_baseline: bool, active: bool, job_id: int | None,
+) -> int:
+    conn = connect()
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO model_version (ts, base_model, method, adapter_path, "
+            "status, is_baseline, active, job_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (ts, base_model, method, adapter_path, status,
+             int(is_baseline), int(active), job_id),
+        )
+        version_id = cur.lastrowid
+    conn.close()
+    return version_id
+
+
+def get_model_version(version_id: int) -> dict | None:
+    conn = connect()
+    row = conn.execute(
+        "SELECT * FROM model_version WHERE id = ?", (version_id,)
+    ).fetchone()
+    conn.close()
+    return _version_dict(row) if row else None
+
+
+def list_model_versions() -> list[dict]:
+    conn = connect()
+    rows = conn.execute(
+        "SELECT * FROM model_version ORDER BY id ASC"
+    ).fetchall()
+    conn.close()
+    return [_version_dict(r) for r in rows]
+
+
+def get_baseline(base_model: str) -> dict | None:
+    conn = connect()
+    row = conn.execute(
+        "SELECT * FROM model_version WHERE base_model = ? AND is_baseline = 1 "
+        "ORDER BY id ASC LIMIT 1",
+        (base_model,),
+    ).fetchone()
+    conn.close()
+    return _version_dict(row) if row else None
+
+
+def set_version_eval(version_id: int, eval_run_id: int, pass_rate: float) -> None:
+    conn = connect()
+    with conn:
+        conn.execute(
+            "UPDATE model_version SET eval_run_id = ?, pass_rate = ? WHERE id = ?",
+            (eval_run_id, pass_rate, version_id),
+        )
+    conn.close()
+
+
+def set_active_version(base_model: str, version_id: int) -> None:
+    """Active exactement une version pour ce base_model (les autres désactivées)."""
+    conn = connect()
+    with conn:
+        conn.execute(
+            "UPDATE model_version SET active = 0 WHERE base_model = ?",
+            (base_model,),
+        )
+        conn.execute(
+            "UPDATE model_version SET active = 1 WHERE id = ?", (version_id,)
+        )
+    conn.close()
+
+
+def _version_dict(row) -> dict:
+    d = dict(row)
+    d["is_baseline"] = bool(d["is_baseline"])
+    d["active"] = bool(d["active"])
+    return d

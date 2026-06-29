@@ -488,3 +488,51 @@ table.rag-docs-table th { color: var(--muted); font-weight: 600; }
 .rag-sources { margin: 0.4rem 0 0; padding-left: 1.1rem; }
 .rag-sources li { margin-bottom: 0.5rem; }
 .rag-source-preview { color: var(--muted); font-size: 0.78rem; margin-top: 0.2rem; }
+
+/* --- V8 : adaptation --- */
+
+.training {
+  margin: 1.5rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.training h3 { font-size: 0.95rem; margin: 0 0 0.4rem; }
+.training h4 { font-size: 0.82rem; margin: 1rem 0 0.5rem; color: var(--muted); }
+
+.train-form {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.train-form input,
+.train-form select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+table.train-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+table.train-table th,
+table.train-table td {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+table.train-table th { color: var(--muted); font-weight: 600; }
