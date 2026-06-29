@@ -71,3 +71,22 @@ class ActionRequest(BaseModel):
 class TestRequest(BaseModel):
     model: str
     prompt: str | None = None
+
+
+# --- V2 : rôles locaux de modèles ---------------------------------------
+
+
+class RoleAssignment(BaseModel):
+    role: str
+    provider: str = "ollama"
+    model: str | None = None        # None = rôle déclaré mais non assigné
+    updated_at: str | None = None
+
+
+# Corps de requête des endpoints de rôle (HTTP body).
+class RoleAssignRequest(BaseModel):
+    model: str
+
+
+class RoleTestRequest(BaseModel):
+    prompt: str | None = None

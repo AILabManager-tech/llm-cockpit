@@ -20,6 +20,14 @@
   {% include "partials/models_table.html" %}
 </div>
 
+<div
+  id="roles-panel"
+  hx-get="/partials/roles"
+  hx-trigger="refresh"
+  hx-swap="innerHTML">
+  {% include "partials/roles_panel.html" %}
+</div>
+
 {% if actions_enabled %}
 <section class="actions-controls">
   <h2>Tester un modèle</h2>

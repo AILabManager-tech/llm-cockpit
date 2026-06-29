@@ -10,3 +10,7 @@ ACTION_ALLOWLIST = {"load", "unload", "test"}      # figé, jamais élargi
 ACTION_TIMEOUT_S = float(os.getenv("ACTION_TIMEOUT_S", "60"))
 DATA_DIR = os.getenv("DATA_DIR", "data")
 ACTION_LOG_PATH = os.path.join(DATA_DIR, "actions.jsonl")
+
+# --- V2 : rôles locaux (préférence déclarée, mono-provider Ollama) ------
+ROLES = ("chat", "code", "vision", "embedding", "fast", "quality", "experimental")
+ROLES_CONFIG_PATH = os.getenv("ROLES_CONFIG_PATH", os.path.join(DATA_DIR, "roles.json"))
