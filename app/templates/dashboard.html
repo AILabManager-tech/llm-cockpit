@@ -20,4 +20,12 @@
   hx-swap="innerHTML">
   {% include "partials/dashboard.html" %}
 </div>
+
+<div
+  id="scoreboard-panel"
+  hx-get="/partials/scoreboard"
+  hx-trigger="refresh"
+  hx-swap="innerHTML">
+  {% include "partials/scoreboard.html" %}
+</div>
 {% endblock %}

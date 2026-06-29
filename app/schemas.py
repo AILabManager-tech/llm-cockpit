@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class ModelInfo(BaseModel):
@@ -207,3 +207,61 @@ class StatsSummary(BaseModel):
     by_model: list[StatsBucket] = []
     by_provider: list[StatsBucket] = []
     by_app: list[StatsBucket] = []
+
+
+# --- V6 : évaluations comparatives --------------------------------------
+
+
+class EvalCheckResult(BaseModel):
+    check: str                      # spec brut, ex. "json_valid", "contains:ok"
+    passed: bool
+    detail: str | None = None
+
+
+class EvalCaseResult(BaseModel):
+    case: str
+    model: str
+    status: str                     # "ok" (exécuté) | "error"
+    latency_ms: float | None = None
+    passed: int                     # checks réussis
+    total: int                      # checks au total
+    score: float                    # passed / total
+    checks: list[EvalCheckResult] = []
+    error: str | None = None
+    response_preview: str | None = None
+
+
+class EvalRunSummary(BaseModel):
+    id: int
+    ts: str
+    suite: str
+    role: str | None = None
+    models: list[str]
+    status: str                     # "completed" | "error"
+    total_cases: int
+    results: list[EvalCaseResult] = []
+
+
+class ScoreboardRow(BaseModel):
+    role: str | None = None
+    model: str
+    runs: int
+    cases: int
+    checks_passed: int
+    checks_total: int
+    pass_rate: float
+    avg_latency_ms: float | None = None
+    errors: int
+
+
+class EvalRunRequest(BaseModel):
+    suite: str
+    models: list[str]
+
+    @field_validator("models", mode="before")
+    @classmethod
+    def _split_csv(cls, value):
+        # Accepte une liste OU une chaîne "a, b" (pratique pour l'UI HTMX).
+        if isinstance(value, str):
+            return [m.strip() for m in value.split(",") if m.strip()]
+        return value

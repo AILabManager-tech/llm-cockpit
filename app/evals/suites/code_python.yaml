@@ -1,0 +1,16 @@
+name: code_python
+role: code
+description: Petites fonctions Python. Aucun code généré n'est jamais exécuté.
+cases:
+  - name: add_function
+    prompt: |
+      Écris une fonction Python nommée add qui prend a et b et renvoie leur
+      somme. Donne uniquement le code, sans explication.
+    checks:
+      - non_empty
+      - contains:def add
+  - name: hello_print
+    prompt: "Écris print('hello') en Python. Donne uniquement le code."
+    checks:
+      - contains:print
+      - latency_lt:60000

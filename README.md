@@ -480,6 +480,82 @@ Gitignored (couvert par `data/`). Seul `app/db/store.py` accède à la base.
 
 ---
 
+# LLM Cockpit — V6 (évaluations comparatives locales)
+
+V6 arrête le choix de modèle « au feeling » : des **suites de tests locales**
+comparent plusieurs modèles sur les mêmes prompts, avec des **checks
+déterministes et inspectables**, et produisent un **scoreboard par rôle**. C'est
+le socle de preuve réutilisé tel quel par V7 (RAG mesuré) et V8 (fine-tuning
+justifié). V0–V5 restent fonctionnels.
+
+```text
+V6 compare les modèles sur des suites locales, avec preuves.
+V6 mesure d'abord avec des checks déterministes et inspectables.
+V6 n'exécute jamais le code généré par un modèle.
+V6 ne fait ni RAG ni fine-tuning ; il fournit le socle de preuve.
+```
+
+## Objectif V6
+
+- Définir des **suites locales** (YAML) : cas = prompt + checks, avec un `role`.
+- Lancer une suite sur **N modèles** → un `EvalResult` par (cas, modèle).
+- Mesurer : passé/échoué par check, score, latence, erreurs.
+- **Scoreboard par (rôle, modèle)** : taux de réussite, latence moyenne, preuves.
+- Conserver runs et résultats en **SQLite** (tables `eval_run` / `eval_result`,
+  à côté de `request_log` V5, jamais à sa place).
+
+## Réutilisation du routage réel
+
+Le runner exécute chaque cas via le **même routage que le gateway V4**
+(`RoutingService` + `adapter.chat`), en in-process (asyncio). Les évals ne
+passent **pas** par l'endpoint HTTP `/v1/*` : elles ne polluent donc pas le
+`request_log` V5 (trafic applicatif vs trafic d'évaluation, distingués).
+
+## Checks déterministes
+
+`non_empty`, `json_valid`, `contains:<txt>`, `regex:<motif>`, `equals:<txt>`,
+`min_length:<n>`, `max_length:<n>`, `latency_lt:<ms>`. Tous déterministes,
+inspectables, sans appel réseau. **Aucun code généré n'est jamais exécuté.**
+Pas de juge LLM comme unique vérité. Un check inconnu → erreur de validation
+**avant** tout run.
+
+## Suites d'exemple
+
+Livrées dans le paquet (versionnées) sous `app/evals/suites/` :
+`json_strict`, `code_python`, `summary`. Surchargeable via `EVALS_DIR`.
+(Note : `data/` étant gitignored, les suites d'exemple vivent dans le paquet,
+pas sous `data/evals/`.)
+
+## Nouveaux endpoints V6
+
+| Méthode / route           | Corps / paramètres            | Réponse              |
+|---------------------------|-------------------------------|----------------------|
+| `POST /api/evals/run`     | `{suite, models[]}`           | `EvalRunSummary`     |
+| `GET  /api/evals`         | `?limit`                      | runs récents         |
+| `GET  /api/evals/{id}`    | —                             | détail d'un run      |
+| `GET  /api/scoreboard`    | `?role`                       | `list[ScoreboardRow]`|
+| `GET  /partials/scoreboard` | —                           | Fragment HTMX        |
+
+`models` accepte une liste JSON **ou** une chaîne `"a, b"` (pratique UI). Suite
+introuvable / YAML cassé / check inconnu / aucun modèle → **400**. Modèle
+injoignable pendant un run → cas `error`, le run **continue** et se termine.
+
+## Persistance & cas limites
+
+Tables `eval_run` et `eval_result` dans `data/cockpit.db` (réutilise SQLite V5).
+Un run est un job **in-process synchrone** (await jusqu'à complétion). Modèle
+down → cas `error` isolé. Réponses stockées **tronquées** (`response_preview`,
+`EVAL_RESPONSE_PREVIEW_MAX`).
+
+## Variable d'environnement V6
+
+| Variable                    | Défaut                  | Rôle                              |
+|-----------------------------|-------------------------|-----------------------------------|
+| `EVALS_DIR`                 | `app/evals/suites`      | Dossier des suites YAML           |
+| `EVAL_RESPONSE_PREVIEW_MAX` | `500`                   | Troncature de la réponse stockée  |
+
+---
+
 ## Tests
 
 ```bash
@@ -491,6 +567,6 @@ Les mocks interceptent le **transport HTTP brut** (`/api/tags`, `/api/ps`,
 `/api/generate`, `/api/chat`, `/v1/models`, `/v1/chat/completions`) : on teste le
 parsing réel des adapters, la conversion ns→ms, la logique de validation/journal,
 la persistance JSON réelle des rôles, l'agrégation/drift du registry, la
-résolution de routage du gateway, et la persistance SQLite réelle des logs
-(insert/query, percentiles, best-effort) — jamais un mock d'interface. Aucun test
-ne dépend d'un provider local en cours d'exécution.
+résolution de routage du gateway, la persistance SQLite réelle des logs, les
+checks déterministes, le runner d'éval et l'agrégation du scoreboard — jamais un
+mock d'interface. Aucun test ne dépend d'un provider local en cours d'exécution.

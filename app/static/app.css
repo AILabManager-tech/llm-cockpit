@@ -374,3 +374,52 @@ table.breakdown-table td {
 }
 
 .dashboard h3 { font-size: 0.9rem; margin: 1rem 0 0.5rem; }
+
+/* --- V6 : scoreboard évaluations --- */
+
+.scoreboard {
+  margin: 1.5rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.scoreboard h3 { font-size: 0.95rem; margin: 0 0 0.6rem; }
+
+.eval-run-form {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.eval-run-form select,
+.eval-run-form input[type="text"] {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.eval-run-form input[type="text"] { flex: 1; min-width: 16rem; }
+
+table.scoreboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-top: 0.6rem;
+}
+
+table.scoreboard-table th,
+table.scoreboard-table td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+table.scoreboard-table th { color: var(--muted); font-weight: 600; }
