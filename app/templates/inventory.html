@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="controls">
+  <button
+    class="btn-refresh"
+    hx-get="/partials/models"
+    hx-target="#models-panel"
+    hx-swap="innerHTML">
+    Rafraîchir
+  </button>
+  <span class="poll-note">Auto-rafraîchissement toutes les 5&nbsp;s</span>
+</section>
+
+<div
+  id="models-panel"
+  hx-get="/partials/models"
+  hx-trigger="every 5s"
+  hx-swap="innerHTML">
+  {% include "partials/models_table.html" %}
+</div>
+{% endblock %}
