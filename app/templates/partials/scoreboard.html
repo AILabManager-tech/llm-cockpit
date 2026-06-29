@@ -1,0 +1,82 @@
+<div class="scoreboard">
+  <h3>Scoreboard évaluations (par rôle / modèle)</h3>
+
+  <form
+    class="eval-run-form"
+    hx-post="/api/evals/run"
+    hx-ext="json-enc"
+    hx-swap="none"
+    hx-on::after-request="htmx.trigger('#scoreboard-panel','refresh')">
+    <select name="suite" aria-label="Suite d'évaluation">
+      {% for s in suites %}
+      <option value="{{ s }}">{{ s }}</option>
+      {% endfor %}
+    </select>
+    <input
+      type="text"
+      name="models"
+      placeholder="modèles séparés par des virgules (ou rôles)"
+      aria-label="Modèles à comparer">
+    <button type="submit" class="btn-refresh">Lancer l'éval</button>
+  </form>
+  <p class="poll-note">
+    Les évals passent par le routage réel du gateway et n'exécutent jamais le
+    code généré.
+  </p>
+
+  {% if not scoreboard %}
+    <p class="empty-state">Aucun résultat d'évaluation pour l'instant.</p>
+  {% else %}
+  <table class="scoreboard-table">
+    <thead>
+      <tr>
+        <th>Rôle</th>
+        <th>Modèle</th>
+        <th>Réussite</th>
+        <th>Checks</th>
+        <th>Cas</th>
+        <th>Runs</th>
+        <th>Latence moy.</th>
+        <th>Erreurs</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in scoreboard %}
+      <tr>
+        <td>{{ r.role or "—" }}</td>
+        <td class="model-name">{{ r.model }}</td>
+        <td>{{ "%.0f"|format(r.pass_rate * 100) }}%</td>
+        <td>{{ r.checks_passed }}/{{ r.checks_total }}</td>
+        <td>{{ r.cases }}</td>
+        <td>{{ r.runs }}</td>
+        <td>
+          {{ "%.0f"|format(r.avg_latency_ms) ~ " ms" if r.avg_latency_ms is not none else "—" }}
+        </td>
+        <td class="{{ 'status-error' if r.errors else '' }}">{{ r.errors }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if runs %}
+  <h3>Runs récents</h3>
+  <table class="journal">
+    <thead>
+      <tr><th>#</th><th>Horodatage</th><th>Suite</th><th>Rôle</th><th>Modèles</th><th>Cas</th></tr>
+    </thead>
+    <tbody>
+      {% for run in runs %}
+      <tr>
+        <td>{{ run.id }}</td>
+        <td class="ts">{{ run.ts }}</td>
+        <td class="model-name">{{ run.suite }}</td>
+        <td>{{ run.role or "—" }}</td>
+        <td>{{ run.models | join(", ") }}</td>
+        <td>{{ run.total_cases }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</div>

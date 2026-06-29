@@ -29,3 +29,11 @@ DB_PATH = os.getenv("DB_PATH", os.path.join(DATA_DIR, "cockpit.db"))
 # Par défaut on NE stocke PAS le contenu des prompts (PII).
 LOG_PROMPTS = os.getenv("LOG_PROMPTS", "0") not in {"0", "false", "False"}
 LOG_PROMPT_MAX_CHARS = int(os.getenv("LOG_PROMPT_MAX_CHARS", "500"))
+
+# --- V6 : évaluations comparatives locales ------------------------------
+# Suites livrées dans le paquet (versionnées) ; surchargeable via EVALS_DIR.
+# (data/ étant gitignored, les suites d'exemple vivent dans le paquet.)
+EVALS_DIR = os.getenv(
+    "EVALS_DIR", os.path.join(os.path.dirname(__file__), "evals", "suites")
+)
+EVAL_RESPONSE_PREVIEW_MAX = int(os.getenv("EVAL_RESPONSE_PREVIEW_MAX", "500"))

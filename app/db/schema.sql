@@ -22,3 +22,37 @@ CREATE TABLE IF NOT EXISTS request_log (
 CREATE INDEX IF NOT EXISTS idx_request_log_ts ON request_log(ts);
 CREATE INDEX IF NOT EXISTS idx_request_log_model ON request_log(model);
 CREATE INDEX IF NOT EXISTS idx_request_log_provider ON request_log(provider);
+
+-- V6 : évaluations comparatives. Un run = une suite jouée sur N modèles ;
+-- un résultat = un (cas, modèle) avec ses checks déterministes.
+
+CREATE TABLE IF NOT EXISTS eval_run (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts          TEXT    NOT NULL,
+    suite       TEXT    NOT NULL,
+    role        TEXT,
+    models      TEXT    NOT NULL,     -- JSON array des modèles comparés
+    status      TEXT    NOT NULL,     -- "completed" | "error"
+    total_cases INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS eval_result (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id           INTEGER NOT NULL,
+    suite            TEXT    NOT NULL,
+    role             TEXT,
+    case_name        TEXT    NOT NULL,
+    model            TEXT    NOT NULL,
+    status           TEXT    NOT NULL,   -- "ok" (exécuté) | "error"
+    latency_ms       REAL,
+    passed           INTEGER NOT NULL,   -- nb de checks réussis
+    total            INTEGER NOT NULL,   -- nb de checks
+    score            REAL    NOT NULL,   -- passed/total
+    checks           TEXT,               -- JSON des résultats de checks
+    error            TEXT,
+    response_preview TEXT,               -- réponse tronquée (preuve)
+    FOREIGN KEY (run_id) REFERENCES eval_run(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_eval_result_run ON eval_result(run_id);
+CREATE INDEX IF NOT EXISTS idx_eval_result_role_model ON eval_result(role, model);

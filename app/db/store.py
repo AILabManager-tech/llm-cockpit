@@ -5,6 +5,7 @@ requête gateway (erreurs avalées proprement). WAL pour les écritures/lectures
 concurrentes. Schéma idempotent appliqué à chaque connexion.
 """
 
+import json
 import logging
 import sqlite3
 from pathlib import Path
@@ -90,5 +91,97 @@ def fetch_for_stats(cutoff_iso: str | None = None) -> list[dict]:
         ).fetchall()
     else:
         rows = conn.execute(f"SELECT {cols} FROM request_log").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+# --- V6 : évaluations (runs + résultats) --------------------------------
+
+
+def insert_eval_run(
+    *, ts: str, suite: str, role: str | None, models: list[str],
+    status: str, total_cases: int,
+) -> int:
+    conn = connect()
+    with conn:
+        cur = conn.execute(
+            "INSERT INTO eval_run (ts, suite, role, models, status, total_cases) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (ts, suite, role, json.dumps(models), status, total_cases),
+        )
+        run_id = cur.lastrowid
+    conn.close()
+    return run_id
+
+
+def insert_eval_result(run_id: int, suite: str, role: str | None, r: dict) -> None:
+    conn = connect()
+    with conn:
+        conn.execute(
+            "INSERT INTO eval_result (run_id, suite, role, case_name, model, "
+            "status, latency_ms, passed, total, score, checks, error, "
+            "response_preview) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                run_id, suite, role, r["case"], r["model"], r["status"],
+                r.get("latency_ms"), r["passed"], r["total"], r["score"],
+                json.dumps(r.get("checks", [])), r.get("error"),
+                r.get("response_preview"),
+            ),
+        )
+    conn.close()
+
+
+def query_eval_runs(limit: int = 50) -> list[dict]:
+    conn = connect()
+    rows = conn.execute(
+        "SELECT * FROM eval_run ORDER BY id DESC LIMIT ?", (limit,)
+    ).fetchall()
+    conn.close()
+    out = []
+    for row in rows:
+        d = dict(row)
+        d["models"] = json.loads(d["models"])
+        out.append(d)
+    return out
+
+
+def get_eval_run(run_id: int) -> dict | None:
+    conn = connect()
+    row = conn.execute(
+        "SELECT * FROM eval_run WHERE id = ?", (run_id,)
+    ).fetchone()
+    conn.close()
+    if row is None:
+        return None
+    d = dict(row)
+    d["models"] = json.loads(d["models"])
+    return d
+
+
+def get_eval_results(run_id: int) -> list[dict]:
+    conn = connect()
+    rows = conn.execute(
+        "SELECT * FROM eval_result WHERE run_id = ? ORDER BY id ASC", (run_id,)
+    ).fetchall()
+    conn.close()
+    out = []
+    for row in rows:
+        d = dict(row)
+        d["case"] = d.pop("case_name")
+        d["checks"] = json.loads(d["checks"]) if d.get("checks") else []
+        out.append(d)
+    return out
+
+
+def fetch_eval_results(role: str | None = None) -> list[dict]:
+    """Lignes brutes pour le scoreboard (agrégation faite en Python)."""
+    conn = connect()
+    cols = "run_id, role, model, status, latency_ms, passed, total"
+    if role:
+        rows = conn.execute(
+            f"SELECT {cols} FROM eval_result WHERE role = ?", (role,)
+        ).fetchall()
+    else:
+        rows = conn.execute(f"SELECT {cols} FROM eval_result").fetchall()
     conn.close()
     return [dict(r) for r in rows]

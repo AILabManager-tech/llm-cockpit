@@ -7,12 +7,21 @@ from fastapi.templating import Jinja2Templates
 
 from app import config
 from app.db import store
+from app.evals import scoreboard as scoreboard_service
+from app.evals.runner import (
+    EvalRunner,
+    EvalValidationError,
+    SuiteError,
+    list_suites,
+)
 from app.gateway.openai import router as gateway_router
 from app.providers.ollama import OllamaAdapter
 from app.schemas import (
     ActionLogEntry,
     ActionRequest,
     ActionResult,
+    EvalRunRequest,
+    EvalRunSummary,
     ModelInfo,
     ProviderConfig,
     ProviderHealth,
@@ -24,6 +33,7 @@ from app.schemas import (
     RoleAssignRequest,
     RoleTestRequest,
     RouteDecision,
+    ScoreboardRow,
     StatsSummary,
     TestRequest,
 )
@@ -81,6 +91,10 @@ def get_registry() -> RegistryService:
 
 def get_routing() -> RoutingService:
     return RoutingService(get_registry())
+
+
+def get_eval_runner() -> EvalRunner:
+    return EvalRunner(get_registry(), get_routing())
 
 
 # --- JSON ---------------------------------------------------------------
@@ -273,6 +287,37 @@ async def api_stats(window: int | None = None) -> StatsSummary:
     return stats.compute_stats(window_seconds=window)
 
 
+# --- V6 : évaluations comparatives --------------------------------------
+
+
+@app.post("/api/evals/run", response_model=EvalRunSummary)
+async def api_eval_run(payload: EvalRunRequest) -> EvalRunSummary:
+    try:
+        return await get_eval_runner().run(payload.suite, payload.models)
+    except SuiteError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except EvalValidationError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/evals", response_model=list[EvalRunSummary])
+async def api_evals(limit: int = 50) -> list[EvalRunSummary]:
+    return store.query_eval_runs(limit=limit)
+
+
+@app.get("/api/evals/{run_id}", response_model=EvalRunSummary)
+async def api_eval_detail(run_id: int) -> EvalRunSummary:
+    run = store.get_eval_run(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail=f"run inconnu : {run_id}")
+    return {**run, "results": store.get_eval_results(run_id)}
+
+
+@app.get("/api/scoreboard", response_model=list[ScoreboardRow])
+async def api_scoreboard(role: str | None = None) -> list[ScoreboardRow]:
+    return scoreboard_service.compute_scoreboard(role=role)
+
+
 # --- HTML (HTMX) --------------------------------------------------------
 
 
@@ -425,6 +470,19 @@ async def partials_dashboard(request: Request) -> HTMLResponse:
         {
             "summary": stats.compute_stats(),
             "logs": store.query_logs(limit=50),
+        },
+    )
+
+
+@app.get("/partials/scoreboard", response_class=HTMLResponse)
+async def partials_scoreboard(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "partials/scoreboard.html",
+        {
+            "scoreboard": scoreboard_service.compute_scoreboard(),
+            "runs": store.query_eval_runs(limit=10),
+            "suites": list_suites(),
         },
     )
 
