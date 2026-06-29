@@ -201,3 +201,45 @@ table.journal th { color: var(--muted); font-weight: 600; }
 .pill.st-unsupported { background: rgba(139, 147, 167, 0.18); color: var(--muted); }
 
 .muted { color: var(--muted); }
+
+/* --- V2 : rôles --- */
+
+.roles {
+  margin: 1.5rem 0 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.roles h2 { font-size: 1rem; margin: 0 0 0.6rem; }
+
+table.roles-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+table.roles-table th,
+table.roles-table td {
+  text-align: left;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+table.roles-table th { color: var(--muted); font-weight: 600; }
+.role-name { font-weight: 600; }
+
+table.roles-table select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.3rem 0.4rem;
+  font: inherit;
+  font-size: 0.8rem;
+  min-width: 14rem;
+}
+
+.btn-action.test { border-color: var(--accent); color: var(--accent); }
+.btn-action:disabled { opacity: 0.4; cursor: not-allowed; }

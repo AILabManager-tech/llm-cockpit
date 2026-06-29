@@ -190,6 +190,75 @@ dans l'adapter (`total_duration_ms`).
 
 ---
 
+# LLM Cockpit — V2 (rôles locaux de modèles)
+
+V2 permet de raisonner en **usages** plutôt qu'en noms de modèles : on assigne un
+**rôle** à un modèle installé, on change ce modèle, et on teste un rôle en
+réutilisant le mécanisme de `test` V1. Couche additive ; V0 et V1 restent
+fonctionnels.
+
+```text
+V2 raisonne en rôles, mais reste mono-provider (Ollama).
+V2 ne route aucune application externe.
+V2 n'optimise pas le choix de modèle ; il enregistre une préférence déclarée.
+V2 n'introduit aucune base de données (préférences en JSON local).
+```
+
+## Objectif V2
+
+- Lister les **rôles** et leur modèle assigné courant.
+- Assigner / changer le modèle d'un rôle (parmi les modèles **installés**).
+- Tester un rôle = lancer le `test` V1 sur le modèle assigné (résultat journalisé
+  dans `data/actions.jsonl` comme toute action V1).
+- Persister les préférences dans `data/roles.json`, rechargé à chaque lecture.
+
+## Rôles (énumération figée)
+
+```text
+chat, code, vision, embedding, fast, quality, experimental
+```
+
+Tous les rôles existent dès le départ, **non assignés** (jamais d'invention d'un
+modèle). Un rôle ne peut être assigné qu'à un modèle réellement installé
+(comparaison sur **nom normalisé**, réutilisée de V0).
+
+## Nouveaux endpoints V2
+
+| Méthode / route               | Corps         | Réponse / effet                              |
+|-------------------------------|---------------|----------------------------------------------|
+| `GET  /api/roles`             | —             | `list[RoleAssignment]` (les 7 rôles)         |
+| `PUT  /api/roles/{role}`      | `{model}`     | `RoleAssignment` ; assigne / change le modèle |
+| `POST /api/roles/{role}/test` | `{prompt?}`   | `ActionResult` (réutilise le `test` V1)      |
+| `GET  /partials/roles`        | —             | Fragment HTMX du panneau Rôles               |
+
+Codes de retour : rôle inconnu → **400** ; modèle non installé → **400** ;
+rôle non assigné lors d'un test → **400** ; `roles.json` corrompu → **400** avec
+message clair (le fichier n'est **jamais** écrasé silencieusement).
+
+## Persistance `data/roles.json`
+
+Fichier JSON local, **écriture atomique** (`tmp` + `os.replace`). Aucune base de
+données. `data/` est gitignored. Forme :
+
+```json
+{
+  "assignments": {
+    "chat": {"model": "qwen2.5:7b", "provider": "ollama", "updated_at": "..."}
+  }
+}
+```
+
+`roles.json` absent → état vide (tous rôles non assignés). `roles.json` corrompu
+→ erreur claire, jamais d'écrasement.
+
+## Variable d'environnement V2
+
+| Variable            | Défaut             | Rôle                                |
+|---------------------|--------------------|-------------------------------------|
+| `ROLES_CONFIG_PATH` | `data/roles.json`  | Emplacement du fichier de préférences |
+
+---
+
 ## Tests
 
 ```bash
@@ -199,5 +268,6 @@ uv run pytest
 
 Les mocks interceptent le **transport HTTP brut** (`/api/tags`, `/api/ps`,
 `/api/generate`) : on teste le parsing réel de `OllamaAdapter`, la conversion
-ns→ms, et la vraie logique de validation/journal — jamais un mock d'interface.
-Aucun test ne dépend d'un Ollama local en cours d'exécution.
+ns→ms, la vraie logique de validation/journal, et la persistance JSON réelle des
+rôles — jamais un mock d'interface. Aucun test ne dépend d'un Ollama local en
+cours d'exécution.
