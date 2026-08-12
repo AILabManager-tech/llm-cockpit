@@ -28,6 +28,34 @@ APP_DIR = PKG_ROOT / "usr" / "share" / "applications"
 ICON_DIR = PKG_ROOT / "usr" / "share" / "icons" / "hicolor" / "scalable" / "apps"
 
 
+# System libraries QtWebEngine needs but the bundle does not carry. Measured,
+# not guessed: `ldd` on LLM-Cockpit and on QtWebEngineProcess, resolved to
+# packages with `dpkg -S`, minus what any glibc system already provides.
+# `a | b` alternatives cover Ubuntu 24.04's t64 renaming without making the
+# package uninstallable on distributions that kept the historical names.
+RUNTIME_DEPENDS = (
+    "libasound2t64 | libasound2",
+    "libdbus-1-3",
+    "libegl1",
+    "libfontconfig1",
+    "libfreetype6",
+    "libgbm1",
+    "libgl1",
+    "libnspr4",
+    "libnss3",
+    "libx11-6",
+    "libxcomposite1",
+    "libxdamage1",
+    "libxext6",
+    "libxfixes3",
+    "libxkbcommon0",
+    "libxkbfile1",
+    "libxrandr2",
+    "libxrender1",
+    "libxtst6",
+)
+
+
 def package_version() -> str:
     data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     return str(data["project"]["version"])
@@ -56,7 +84,7 @@ def clean_tree() -> None:
 
 def copy_bundle(bundle: Path) -> Path:
     target = OPT_ROOT / "LLM-Cockpit"
-    shutil.copytree(bundle, target)
+    shutil.copytree(bundle, target, symlinks=True)
     return target
 
 
@@ -89,7 +117,7 @@ def assemble_deb_files(bundle_dir: Path) -> None:
                 "Icon=llm-cockpit",
                 "Terminal=false",
                 "Categories=Development;Utility;",
-                "StartupWMClass=LLM Cockpit V8",
+                "StartupWMClass=LLM-Cockpit",
             ]
         )
         + "\n",
@@ -110,13 +138,12 @@ def assemble_deb_files(bundle_dir: Path) -> None:
                 "Priority: optional",
                 "Architecture: amd64",
                 "Maintainer: LLM Cockpit <no-reply@llm-cockpit.local>",
-                # Only needed for the native window; without them the app
-                # falls back to the default browser, so they are not hard deps.
-                "Recommends: libgtk-3-0, libwebkit2gtk-4.1-0",
+                f"Depends: {', '.join(RUNTIME_DEPENDS)}",
                 "Description: Local-first LLM cockpit desktop application",
-                " LLM Cockpit wraps the existing FastAPI runtime in a native Linux",
-                " desktop package for local use. When no GTK/QT backend is",
-                " available it serves the cockpit and opens the default browser.",
+                " LLM Cockpit wraps the existing FastAPI runtime in a Linux",
+                " desktop package. The window engine (Qt WebEngine) travels",
+                " inside the package: no browser and no Python are required on",
+                " the machine.",
             ]
         )
         + "\n",

@@ -81,12 +81,16 @@ and the request lands in the dashboard.
 
 ## Linux desktop
 
+LLM Cockpit ships as a desktop application: its window engine (Qt WebEngine)
+travels inside the package, so the machine needs no browser and no Python.
+
 ```bash
 uv sync --extra desktop
 uv run python scripts/build_deb.py
 ```
 
-The `.deb` lands in `dist/linux/`. Local install without root:
+The `.deb` lands in `dist/linux/` (~190 MB packed, ~590 MB installed — an
+embedded browser engine is most of it). Local install without root:
 
 ```bash
 uv run python scripts/build_linux_bundle.py
@@ -94,8 +98,13 @@ uv run python scripts/install_linux.py   # scripts/uninstall_linux.py to revert
 ```
 
 The launcher picks a free port in `22050-22099`, starts the server, and opens
-a native window when a GTK/QT backend is available — otherwise it serves the
-cockpit and opens your default browser.
+a dedicated window — no tab, no address bar. If the Qt bindings are missing
+(a plain `uv sync` without the `desktop` extra), it degrades in two steps:
+a Chromium-family browser in `--app` mode, then the default browser.
+
+Qt comes from **PySide6 under LGPLv3**, kept dynamically linked in the
+PyInstaller `onedir` bundle so the Qt libraries remain replaceable, which is
+what the LGPL requires. The cockpit's own code stays MIT.
 
 ## Tests
 

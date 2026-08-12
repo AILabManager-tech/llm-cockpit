@@ -47,7 +47,39 @@ def test_native_window_falls_back_when_gui_backend_missing(monkeypatch, capsys):
     fake = types.SimpleNamespace(create_window=lambda *a, **k: None, start=_boom)
     monkeypatch.setitem(sys.modules, "webview", fake)
     assert desktop._open_native_window("http://127.0.0.1:1/") is False
-    assert "falling back to the browser" in capsys.readouterr().out
+    assert "using the application window" in capsys.readouterr().out
+
+
+def test_app_mode_argv_asks_for_a_windowed_app(tmp_path):
+    argv = desktop._app_mode_argv("/usr/bin/brave-browser", "http://x/", tmp_path)
+    assert argv[0] == "/usr/bin/brave-browser"
+    assert "--app=http://x/" in argv
+    assert f"--user-data-dir={tmp_path}" in argv
+    assert f"--class={desktop.WM_CLASS}" in argv
+
+
+def test_app_window_returns_false_without_a_chromium_browser(monkeypatch, tmp_path):
+    monkeypatch.setattr(desktop.shutil, "which", lambda _name: None)
+    assert desktop._open_app_window("http://x/", tmp_path) is False
+
+
+def test_app_window_waits_for_the_window_to_close(monkeypatch, tmp_path):
+    seen = {}
+
+    class _Process:
+        def wait(self):
+            seen["waited"] = True
+
+    def _popen(argv, **_kwargs):
+        seen["argv"] = argv
+        return _Process()
+
+    monkeypatch.setattr(desktop.shutil, "which", lambda name: f"/usr/bin/{name}")
+    monkeypatch.setattr(desktop.subprocess, "Popen", _popen)
+    assert desktop._open_app_window("http://x/", tmp_path) is True
+    assert seen["waited"] is True
+    assert "--app=http://x/" in seen["argv"]
+    assert (tmp_path / "window-profile").is_dir()
 
 
 def test_native_window_returns_true_when_it_opens(monkeypatch):
@@ -56,3 +88,55 @@ def test_native_window_returns_true_when_it_opens(monkeypatch):
     )
     monkeypatch.setitem(sys.modules, "webview", fake)
     assert desktop._open_native_window("http://127.0.0.1:1/") is True
+
+
+def test_native_window_pins_the_qt_backend_when_available(monkeypatch):
+    started = {}
+    fake = types.SimpleNamespace(
+        create_window=lambda *a, **k: None,
+        start=lambda *a, **k: started.update(k),
+    )
+    monkeypatch.setitem(sys.modules, "webview", fake)
+    monkeypatch.setattr(desktop, "_qt_backend_available", lambda: True)
+    assert desktop._open_native_window("http://127.0.0.1:1/") is True
+    assert started["gui"] == "qt"
+
+
+def test_native_window_lets_pywebview_choose_without_qt(monkeypatch):
+    started = {}
+    fake = types.SimpleNamespace(
+        create_window=lambda *a, **k: None,
+        start=lambda *a, **k: started.update(k),
+    )
+    monkeypatch.setitem(sys.modules, "webview", fake)
+    monkeypatch.setattr(desktop, "_qt_backend_available", lambda: False)
+    assert desktop._open_native_window("http://127.0.0.1:1/") is True
+    assert started["gui"] is None
+
+
+def test_window_icon_found_next_to_the_module():
+    icon = desktop._window_icon()
+    assert icon is not None
+    assert icon.is_file()
+    assert icon.name == "llm-cockpit-favicon.svg"
+
+
+def test_window_icon_found_one_level_up_like_the_frozen_bundle(
+    monkeypatch, tmp_path
+):
+    # Frozen layout: desktop.py at the root, assets under app/static/.
+    bundled = tmp_path / "app" / "static"
+    bundled.mkdir(parents=True)
+    (bundled / "llm-cockpit-favicon.svg").write_text("<svg/>", encoding="utf-8")
+    monkeypatch.setattr(desktop, "__file__", str(tmp_path / "desktop.py"))
+    assert desktop._window_icon() == bundled / "llm-cockpit-favicon.svg"
+
+
+def test_window_icon_is_none_when_missing(monkeypatch, tmp_path):
+    monkeypatch.setattr(desktop, "__file__", str(tmp_path / "desktop.py"))
+    assert desktop._window_icon() is None
+
+
+def test_qt_backend_detection_is_import_based(monkeypatch):
+    monkeypatch.setitem(sys.modules, "webview.platforms.qt", None)
+    assert desktop._qt_backend_available() is False

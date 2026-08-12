@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """Build a desktop bundle for LLM Cockpit with PyInstaller.
 
+Same bundle as `build_linux_bundle.py`, written to the default `dist/`.
+The PyInstaller options themselves live in `build_linux_bundle.common_args()`
+so the two scripts cannot drift apart.
+
 Usage:
   uv run python scripts/build_desktop.py
 """
 
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def add_data(src: Path, dst: str) -> str:
-    return f"{src}{os.pathsep}{dst}"
+from build_linux_bundle import ROOT, common_args  # noqa: E402
 
 
 def main() -> int:
@@ -25,19 +25,7 @@ def main() -> int:
         sys.executable,
         "-m",
         "PyInstaller",
-        "--noconfirm",
-        "--clean",
-        "--windowed",
-        "--name",
-        "LLM-Cockpit",
-        "--add-data",
-        add_data(ROOT / "app" / "templates", "app/templates"),
-        "--add-data",
-        add_data(ROOT / "app" / "static", "app/static"),
-        "--add-data",
-        add_data(ROOT / "app" / "db" / "schema.sql", "app/db"),
-        "--add-data",
-        add_data(ROOT / "app" / "evals" / "suites", "app/evals/suites"),
+        *common_args(),
         str(ROOT / "app" / "desktop.py"),
     ]
     print(" ".join(cmd))

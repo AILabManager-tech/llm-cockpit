@@ -7,4 +7,4 @@ Exec=llm-cockpit
 Icon=llm-cockpit
 Terminal=false
 Categories=Development;Utility;
-StartupWMClass=LLM Cockpit V8
+StartupWMClass=LLM-Cockpit

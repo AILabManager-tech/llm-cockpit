@@ -1,30 +1,53 @@
 #!/usr/bin/env python3
-"""Remove the Linux desktop installation from the current user profile."""
+"""Remove the Linux desktop installation from the current user profile.
+
+Path resolution is imported from `install_linux.py` on purpose: computing it
+a second time here is how this script used to look at `~/.local/share` while
+the installer had honoured `XDG_DATA_HOME`, remove nothing, and still report
+success.
+"""
 
 from __future__ import annotations
 
 import shutil
+import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-APP_NAME = "llm-cockpit"
+from install_linux import (  # noqa: E402
+    APP_NAME,
+    applications_dir,
+    bin_dir,
+    icons_dir,
+    install_dir,
+)
 
 
 def main() -> int:
-    data_base = Path.home() / ".local" / "share"
-    install_root = data_base / APP_NAME
-    desktop_file = data_base / "applications" / f"{APP_NAME}.desktop"
-    icon_file = data_base / "icons" / "hicolor" / "scalable" / "apps" / "llm-cockpit.svg"
-    launcher = Path.home() / ".local" / "bin" / APP_NAME
+    install_root = install_dir()
+    files = [
+        applications_dir() / f"{APP_NAME}.desktop",
+        icons_dir() / f"{APP_NAME}.svg",
+        bin_dir() / APP_NAME,
+    ]
 
-    for path in [desktop_file, icon_file, launcher]:
-        if path.exists():
+    removed: list[Path] = []
+    for path in files:
+        if path.is_file() or path.is_symlink():
             path.unlink()
+            removed.append(path)
 
     if install_root.exists():
         shutil.rmtree(install_root)
+        removed.append(install_root)
 
-    print("uninstalled")
+    if not removed:
+        print(f"nothing to uninstall (looked under {install_root.parent})")
+        return 0
+
+    for path in removed:
+        print(f"removed {path}")
     return 0
 
 

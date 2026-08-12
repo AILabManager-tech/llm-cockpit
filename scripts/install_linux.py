@@ -57,7 +57,7 @@ def main() -> int:
             shutil.rmtree(app_bin)
         else:
             app_bin.unlink()
-    shutil.copytree(BUNDLE, app_bin)
+    shutil.copytree(BUNDLE, app_bin, symlinks=True)
 
     main_exe = app_bin / "LLM-Cockpit"
     if main_exe.exists():
@@ -70,7 +70,7 @@ def main() -> int:
     launcher.chmod(launcher.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
     icon_src = ROOT / "app" / "static" / "llm-cockpit-favicon.svg"
-    icon_dst = icons_dir() / "llm-cockpit.svg"
+    icon_dst = icons_dir() / f"{APP_NAME}.svg"
     shutil.copy2(icon_src, icon_dst)
 
     desktop_file = applications_dir() / "llm-cockpit.desktop"
@@ -86,7 +86,7 @@ def main() -> int:
                 "Icon=llm-cockpit",
                 "Terminal=false",
                 "Categories=Development;Utility;",
-                "StartupWMClass=LLM Cockpit V8",
+                "StartupWMClass=LLM-Cockpit",
             ]
         )
         + "\n",

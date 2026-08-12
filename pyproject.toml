@@ -24,6 +24,11 @@ dev = [
 desktop = [
     "pywebview>=5.4",
     "pyinstaller>=6.0",
+    # Embedded window engine. PySide6 is LGPLv3 and is kept dynamically
+    # linked (PyInstaller onedir), which is what LGPL compliance requires.
+    # PyQt6 would work too but is GPL, which this MIT project will not take.
+    "qtpy>=2.4",
+    "PySide6>=6.7",
 ]
 
 [tool.uv]
