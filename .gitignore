@@ -4,5 +4,12 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 *.egg-info/
-uv.lock
 data/
+build/
+dist/
+*.deb
+*.AppImage
+*.pkg.tar.zst
+*.rpm
+
+.uv-cache/
