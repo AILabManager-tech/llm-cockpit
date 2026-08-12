@@ -14,5 +14,6 @@ dist/
 
 .uv-cache/
 
-# suivi de chantier local, hors repo publié
+# suivi de chantier et mandats locaux, hors repo publié
 llm_cockpit.md
+MANDAT_*.md
