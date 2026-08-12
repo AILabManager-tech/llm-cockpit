@@ -2,7 +2,7 @@ import os
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 HOST = os.getenv("HOST", "127.0.0.1")
-PORT = int(os.getenv("PORT", "8000"))
+PORT = int(os.getenv("PORT", "22050"))
 
 # --- V1 : contrôle sécurisé minimal -------------------------------------
 ACTIONS_ENABLED = os.getenv("ACTIONS_ENABLED", "1") not in {"0", "false", "False"}
