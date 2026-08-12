@@ -7,9 +7,9 @@
     hx-get="/partials/models"
     hx-target="#models-panel"
     hx-swap="innerHTML">
-    Rafraîchir
+    Refresh
   </button>
-  <span class="poll-note">Auto-rafraîchissement toutes les 5&nbsp;s</span>
+  <span class="poll-note">Auto-refresh every 5&nbsp;s</span>
 </section>
 
 <div
@@ -46,21 +46,21 @@
 
 {% if actions_enabled %}
 <section class="actions-controls">
-  <h2>Tester un modèle</h2>
+  <h2>Test a model</h2>
   <form
     hx-post="/api/actions/test"
     hx-ext="json-enc"
     hx-swap="none"
     hx-on::after-request="htmx.trigger('#actions-panel', 'refresh')">
-    <select name="model" aria-label="Modèle à tester">
+    <select name="model" aria-label="Model to test">
       {% for m in models %}
       <option value="{{ m.normalized_name }}">{{ m.normalized_name }}</option>
       {% endfor %}
     </select>
-    <input type="text" name="prompt" value="Réponds OK." aria-label="Prompt de test">
-    <button type="submit" class="btn-refresh">Tester</button>
+    <input type="text" name="prompt" value="Reply OK." aria-label="Test prompt">
+    <button type="submit" class="btn-refresh">Test</button>
   </form>
-  <p class="poll-note">Le résultat apparaît dans le journal d'actions ci-dessous.</p>
+  <p class="poll-note">The result appears in the action log below.</p>
 </section>
 {% endif %}
 

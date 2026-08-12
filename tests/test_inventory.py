@@ -173,7 +173,7 @@ def test_partials_distinguishes_unreachable_from_empty():
     respx.get(f"{BASE}/api/ps").mock(side_effect=httpx.ConnectError("down"))
     resp = client.get("/partials/models")
     assert resp.status_code == 200
-    assert "injoignable" in resp.text
+    assert "unreachable" in resp.text
 
 
 @respx.mock
@@ -186,4 +186,4 @@ def test_partials_empty_inventory_message():
     )
     resp = client.get("/partials/models")
     assert resp.status_code == 200
-    assert "aucun modèle" in resp.text.lower()
+    assert "no model is installed" in resp.text.lower()

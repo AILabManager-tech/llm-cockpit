@@ -2,15 +2,15 @@
 
 {% block content %}
 <section class="controls">
-  <a class="btn-refresh" href="/">← Inventaire</a>
+  <a class="btn-refresh" href="/">← Inventory</a>
   <button
     class="btn-refresh"
     hx-get="/partials/dashboard"
     hx-target="#dashboard-panel"
     hx-swap="innerHTML">
-    Rafraîchir
+    Refresh
   </button>
-  <span class="poll-note">Activité gateway — rafraîchissement toutes les 5&nbsp;s</span>
+  <span class="poll-note">Gateway activity — auto-refresh every 5&nbsp;s</span>
 </section>
 
 <div

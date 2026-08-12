@@ -21,8 +21,15 @@ body {
 .topbar {
   padding: 1.25rem 1.5rem;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
 }
 
+.brand { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
+.brand-mark { width: 40px; height: 40px; flex: 0 0 auto; }
 .topbar h1 { margin: 0; font-size: 1.4rem; }
 
 .badge-version {
@@ -323,9 +330,38 @@ table.routes-table th { color: var(--muted); font-weight: 600; }
 
 /* --- V5 : dashboard --- */
 
-.topnav { margin-top: 0.5rem; display: flex; gap: 1rem; }
-.topnav a { color: var(--accent); text-decoration: none; font-size: 0.85rem; }
+.topnav {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.topnav a {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
 .topnav a:hover { text-decoration: underline; }
+
+.lang-switch {
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.lang-switch.is-active {
+  color: var(--text);
+  border-color: var(--accent);
+  background: rgba(76, 125, 255, 0.14);
+}
 
 .stat-cards {
   display: flex;

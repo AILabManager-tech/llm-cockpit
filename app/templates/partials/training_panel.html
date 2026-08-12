@@ -1,16 +1,16 @@
 <div class="training">
   <h3>
-    Adaptation LoRA/QLoRA
+    LoRA/QLoRA adaptation
     {% if runner_configured %}
-      <span class="pill st-ok">runner configuré</span>
+      <span class="pill st-ok">runner configured</span>
     {% else %}
-      <span class="pill st-unsupported">dry-run (aucun runner)</span>
+      <span class="pill st-unsupported">dry-run (no runner)</span>
     {% endif %}
   </h3>
   <p class="poll-note">
-    Le cockpit orchestre et mesure ; l'entraînement réel tourne dans un runner
-    externe allowlisté. Le baseline n'est jamais écrasé ; promotion gatée par
-    les évals V6.
+    The cockpit orchestrates and measures; the real training runs in an
+    allowlisted external runner. The baseline is never overwritten; promotion is
+    gated by V6 evals.
   </p>
 
   <h4>Datasets</h4>
@@ -20,14 +20,14 @@
     hx-ext="json-enc"
     hx-swap="none"
     hx-on::after-request="htmx.trigger('#training-panel','refresh')">
-    <input type="text" name="name" placeholder="nom" aria-label="Nom du dataset" required>
-    <input type="text" name="path" placeholder="fichier .jsonl sous data/datasets"
-           aria-label="Chemin du dataset" required>
-    <button type="submit" class="btn-refresh">Valider</button>
+    <input type="text" name="name" placeholder="name" aria-label="Dataset name" required>
+    <input type="text" name="path" placeholder=".jsonl file under data/datasets"
+           aria-label="Dataset path" required>
+    <button type="submit" class="btn-refresh">Validate</button>
   </form>
   {% if datasets %}
   <table class="train-table">
-    <thead><tr><th>#</th><th>Nom</th><th>Lignes</th><th>Statut</th></tr></thead>
+    <thead><tr><th>#</th><th>Name</th><th>Rows</th><th>Status</th></tr></thead>
     <tbody>
       {% for d in datasets %}
       <tr><td>{{ d.id }}</td><td class="model-name">{{ d.name }}</td>
@@ -37,7 +37,7 @@
   </table>
   {% endif %}
 
-  <h4>Lancer un job</h4>
+  <h4>Run a job</h4>
   <form
     class="train-form"
     hx-post="/api/train"
@@ -45,20 +45,20 @@
     hx-swap="none"
     hx-on::after-request="htmx.trigger('#training-panel','refresh')">
     <input type="number" name="dataset_id" placeholder="dataset_id"
-           aria-label="ID du dataset" required>
+           aria-label="Dataset ID" required>
     <input type="text" name="base_model" value="{{ base_model }}"
-           placeholder="base_model" aria-label="Modèle de base">
-    <select name="method" aria-label="Méthode">
+           placeholder="base_model" aria-label="Base model">
+    <select name="method" aria-label="Method">
       <option value="lora">lora</option>
       <option value="qlora">qlora</option>
     </select>
-    <button type="submit" class="btn-refresh">Lancer</button>
+    <button type="submit" class="btn-refresh">Run</button>
   </form>
 
   {% if jobs %}
   <h4>Jobs</h4>
   <table class="train-table">
-    <thead><tr><th>#</th><th>Méthode</th><th>Statut</th><th>Version</th><th></th></tr></thead>
+    <thead><tr><th>#</th><th>Method</th><th>Status</th><th>Version</th><th></th></tr></thead>
     <tbody>
       {% for j in jobs %}
       <tr>
@@ -71,7 +71,7 @@
           <button class="btn-action unload"
                   hx-post="/api/train/{{ j.id }}/cancel" hx-swap="none"
                   hx-on::after-request="htmx.trigger('#training-panel','refresh')">
-            Annuler
+            Cancel
           </button>
           {% endif %}
         </td>
@@ -82,15 +82,15 @@
   {% endif %}
 
   {% if versions %}
-  <h4>Versions de modèle</h4>
+  <h4>Model versions</h4>
   <p class="poll-note">
-    « Actif » = sélection dans le registry, <strong>pas</strong> ce que sert le
-    gateway. En V8, le gateway sert toujours le modèle de base ; l'adapter promu
-    n'est pas servi par <code>/v1/chat/completions</code>.
+    "Active" = registry selection, <strong>not</strong> what the gateway serves.
+    In V8, the gateway always serves the base model; the promoted adapter is not
+    served by <code>/v1/chat/completions</code>.
   </p>
   <table class="train-table">
     <thead>
-      <tr><th>#</th><th>Base</th><th>Type</th><th>Actif (registry)</th><th>Serving</th><th>Pass-rate</th><th>Éval</th><th></th></tr>
+      <tr><th>#</th><th>Base</th><th>Type</th><th>Active (registry)</th><th>Serving</th><th>Pass rate</th><th>Eval</th><th></th></tr>
     </thead>
     <tbody>
       {% for v in versions %}
@@ -98,12 +98,12 @@
         <td>{{ v.id }}</td>
         <td class="model-name">{{ v.base_model }}</td>
         <td>{{ "baseline" if v.is_baseline else (v.method or "candidate") }}</td>
-        <td>{% if v.active %}<span class="pill st-ok">actif</span>{% else %}—{% endif %}</td>
+        <td>{% if v.active %}<span class="pill st-ok">active</span>{% else %}—{% endif %}</td>
         <td>
           {% if v.serving_status == "served_as_base" %}
-            <span class="pill st-ok" title="{{ v.serving_note }}">servi (base)</span>
+            <span class="pill st-ok" title="{{ v.serving_note }}">served (base)</span>
           {% else %}
-            <span class="pill st-unsupported" title="{{ v.serving_note }}">non servi</span>
+            <span class="pill st-unsupported" title="{{ v.serving_note }}">not served</span>
           {% endif %}
         </td>
         <td>{{ "%.3f"|format(v.pass_rate) if v.pass_rate is not none else "—" }}</td>
@@ -114,14 +114,14 @@
                   hx-post="/api/models/promote" hx-ext="json-enc"
                   hx-vals='{"version_id": {{ v.id }}}' hx-swap="none"
                   hx-on::after-request="htmx.trigger('#training-panel','refresh')"
-                  title="Marque la version active dans le registry (ne la sert pas).">
-            Promouvoir (registry)
+            title="Marks the version active in the registry (does not serve it).">
+            Promote (registry)
           </button>
           <button class="btn-action unload"
                   hx-post="/api/models/rollback" hx-ext="json-enc"
                   hx-vals='{"version_id": {{ v.id }}}' hx-swap="none"
                   hx-on::after-request="htmx.trigger('#training-panel','refresh')">
-            Rollback
+            Roll back
           </button>
           {% endif %}
         </td>

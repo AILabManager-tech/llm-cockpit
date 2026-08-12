@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="LLM Cockpit">
+  <style>
+    .bezel    { fill:none; stroke:#4E7A9E; stroke-width:6;   stroke-linejoin:round; }
+    .segring  { fill:none; stroke:#4E7A9E; stroke-width:4;   stroke-linecap:round; stroke-dasharray:56 30; }
+    .serving  { fill:none; stroke:#4E7A9E; stroke-width:3.5; }
+    .registry { fill:none; stroke:#A855F7; stroke-width:3.5; stroke-linecap:round; stroke-dasharray:10 9; }
+    .route    { fill:none; stroke:#3DE84C; stroke-width:5;   stroke-linecap:round; }
+    .core     { fill:#3DE84C; }
+    .head     { fill:#3DE84C; }
+  </style>
+
+  <defs>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <polygon class="bezel" points="200,50 329.9,125 329.9,275 200,350 70.1,275 70.1,125"/>
+  <circle class="segring" cx="200" cy="200" r="116"/>
+  <circle class="serving" cx="200" cy="200" r="96"/>
+  <circle class="registry" cx="200" cy="200" r="72"/>
+  <circle class="serving" cx="200" cy="200" r="48"/>
+  <line class="route" x1="211" y1="189" x2="258" y2="142"/>
+  <polygon class="head" points="273.5,126.5 263.7,147.7 252.3,136.3"/>
+  <circle class="core" cx="200" cy="200" r="15"/>
+</svg>

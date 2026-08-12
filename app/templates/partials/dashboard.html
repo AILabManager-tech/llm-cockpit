@@ -2,34 +2,34 @@
   <section class="stat-cards">
     <div class="stat-card">
       <span class="stat-value">{{ summary.total }}</span>
-      <span class="stat-label">requêtes</span>
+      <span class="stat-label">requests</span>
     </div>
     <div class="stat-card">
       <span class="stat-value">{{ summary.errors }}</span>
-      <span class="stat-label">erreurs</span>
+      <span class="stat-label">errors</span>
     </div>
     <div class="stat-card">
       <span class="stat-value">{{ "%.1f"|format(summary.error_rate * 100) }}%</span>
-      <span class="stat-label">taux d'erreur</span>
+      <span class="stat-label">error rate</span>
     </div>
     <div class="stat-card">
       <span class="stat-value">
         {{ "%.0f"|format(summary.latency_p50_ms) if summary.latency_p50_ms is not none else "—" }}
       </span>
-      <span class="stat-label">latence p50 (ms)</span>
+      <span class="stat-label">latency p50 (ms)</span>
     </div>
     <div class="stat-card">
       <span class="stat-value">
         {{ "%.0f"|format(summary.latency_p95_ms) if summary.latency_p95_ms is not none else "—" }}
       </span>
-      <span class="stat-label">latence p95 (ms)</span>
+      <span class="stat-label">latency p95 (ms)</span>
     </div>
   </section>
 
   <div class="stat-breakdowns">
-    {% for title, buckets in [("Par modèle", summary.by_model),
-                              ("Par provider", summary.by_provider),
-                              ("Par app", summary.by_app)] %}
+    {% for title, buckets in [("By model", summary.by_model),
+                              ("By provider", summary.by_provider),
+                              ("By app", summary.by_app)] %}
     <div class="breakdown">
       <h3>{{ title }}</h3>
       {% if not buckets %}
@@ -53,20 +53,20 @@
     {% endfor %}
   </div>
 
-  <h3>Dernières requêtes</h3>
+  <h3>Latest requests</h3>
   {% if not logs %}
-    <p class="empty-state">Aucune requête gateway enregistrée.</p>
+    <p class="empty-state">No gateway requests recorded.</p>
   {% else %}
   <table class="journal">
     <thead>
       <tr>
-        <th>Horodatage</th>
+        <th>Timestamp</th>
         <th>App</th>
-        <th>Rôle</th>
+        <th>Role</th>
         <th>Provider</th>
-        <th>Modèle</th>
-        <th>Statut</th>
-        <th>Latence</th>
+        <th>Model</th>
+        <th>Status</th>
+        <th>Latency</th>
         <th>Tokens (p/c)</th>
       </tr>
     </thead>

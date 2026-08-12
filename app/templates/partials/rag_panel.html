@@ -1,5 +1,5 @@
 <div class="rag">
-  <h3>RAG local <span class="poll-note">embeddings : {{ embed_model }}</span></h3>
+  <h3>Local RAG <span class="poll-note">embeddings: {{ embed_model }}</span></h3>
 
   <form
     class="rag-ingest-form"
@@ -10,20 +10,20 @@
     <input
       type="text"
       name="path"
-      placeholder="fichier sous data/rag/docs (ex. notes.md)"
-      aria-label="Chemin du document">
-    <button type="submit" class="btn-refresh">Ingérer</button>
+      placeholder="file under data/rag/docs (e.g. notes.md)"
+      aria-label="Document path">
+    <button type="submit" class="btn-refresh">Ingest</button>
   </form>
   <p class="poll-note">
-    Les documents ingérés restent locaux (data/rag/), jamais committés.
+    Ingested documents stay local (data/rag/), never committed.
   </p>
 
   {% if not documents %}
-    <p class="empty-state">Aucun document ingéré.</p>
+    <p class="empty-state">No document ingested.</p>
   {% else %}
   <table class="rag-docs-table">
     <thead>
-      <tr><th>#</th><th>Document</th><th>Chunks</th><th>Dim</th><th>Modèle</th><th></th></tr>
+      <tr><th>#</th><th>Document</th><th>Chunks</th><th>Dim</th><th>Model</th><th></th></tr>
     </thead>
     <tbody>
       {% for d in documents %}
@@ -39,7 +39,7 @@
             hx-delete="/api/rag/documents/{{ d.id }}"
             hx-swap="none"
             hx-on::after-request="htmx.trigger('#rag-panel','refresh')">
-            Retirer
+            Remove
           </button>
         </td>
       </tr>
@@ -48,7 +48,7 @@
   </table>
   {% endif %}
 
-  <h4>Interroger les documents</h4>
+  <h4>Query the documents</h4>
   <form
     class="rag-query-form"
     hx-post="/partials/rag/query"
@@ -59,14 +59,14 @@
       type="text"
       name="query"
       placeholder="question…"
-      aria-label="Question RAG"
+      aria-label="RAG question"
       required>
     <input
       type="text"
       name="role"
-      placeholder="rôle (optionnel, ex. chat)"
-      aria-label="Rôle">
-    <button type="submit" class="btn-refresh">Demander</button>
+      placeholder="role (optional, e.g. chat)"
+      aria-label="Role">
+    <button type="submit" class="btn-refresh">Ask</button>
   </form>
   <div id="rag-answer"></div>
 </div>
