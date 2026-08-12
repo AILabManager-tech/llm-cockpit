@@ -13,3 +13,6 @@ dist/
 *.rpm
 
 .uv-cache/
+
+# suivi de chantier local, hors repo publié
+llm_cockpit.md
