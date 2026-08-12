@@ -14,9 +14,10 @@ Date de ce point : 2026-08-12
   `formation_v8/` (copie des docs de formation retirés du repo le 2026-08-12).
   **Décision : gardé tel quel, hors repo.** Cohérent avec `MANIFEST.md` de l'export qui
   liste explicitement `docs/formation/` et `docs/mandats/` comme "Removed Before Publishing".
-- `llm-cockpit-github-export/` = snapshot d'export, désormais **périmé** (antérieur à tout
-  le travail du 2026-08-12). Régénérable depuis ce repo.
-- `llm-cockpit-v0/` = un seul `README.md`, vide, sans valeur.
+- `llm-cockpit-github-export/` = **supprimé le 2026-08-12** (snapshot périmé, un seul
+  fichier unique : un `MANIFEST.md` d'inventaire que le repo git rend inutile).
+- `llm-cockpit-v0/` = **supprimé le 2026-08-12** (un `README.md` court obsolète, port 8000).
+- Reste dans le parent : `llm-cockpit-github-export.zip` (152 Ko), même statut périmé.
 
 ## DONE
 
@@ -43,12 +44,11 @@ Date de ce point : 2026-08-12
 - [x] LICENSE MIT + `uv.lock` trackés, `docs/` interne retiré du tree publié
 - [x] `main` fast-forward de V0 → V8 (historique linéaire, branches `phase/*` intactes)
 - [x] 5 commits atomiques (`a573fb6` → `79b8188`)
+- [x] `llm-cockpit-v0/` et `llm-cockpit-github-export/` supprimés (go utilisateur 2026-08-12)
 
 ## TODO — décisions utilisateur
 
-- [ ] **Supprimer `llm-cockpit-v0/`** (1 README vide) — destructif, confirmation requise
-- [ ] **Supprimer `llm-cockpit-github-export/`** — périmé depuis le 2026-08-12, régénérable ;
-      destructif, confirmation requise
+- [ ] **Supprimer `llm-cockpit-github-export.zip`** — dernier résidu de l'export périmé
 - [ ] **Publier sur GitHub ?** Le repo n'a aucun remote. `git push` = hard-stop.
       Si oui : créer le repo, `git remote add origin …`, exclure `llm_cockpit.md`
 - [ ] **Fenêtre native** : le bundle PyInstaller ne peut pas importer le `gi` système →
