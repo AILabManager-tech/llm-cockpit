@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=LLM Cockpit
+Comment=Local-first LLM cockpit
+Exec=llm-cockpit
+Icon=llm-cockpit
+Terminal=false
+Categories=Development;Utility;
+StartupWMClass=LLM Cockpit V8
