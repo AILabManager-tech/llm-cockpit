@@ -1,20 +1,29 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LLM Cockpit</title>
+  <link rel="icon" type="image/svg+xml" href="/static/llm-cockpit-favicon.svg">
   <link rel="stylesheet" href="/static/app.css">
+  <script defer src="/static/i18n.js"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/json-enc.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <h1>LLM Cockpit <span class="badge-version">V8</span></h1>
-    <p class="subtitle">Inventaire → contrôle → rôles → registry → gateway → observabilité → évals → RAG → adaptation</p>
+    <div class="brand">
+      <img class="brand-mark" src="/static/llm-cockpit-favicon.svg" alt="" aria-hidden="true">
+      <div>
+        <h1>LLM Cockpit <span class="badge-version">V8</span></h1>
+        <p class="subtitle">Inventory → control → roles → registry → gateway → observability → evals → RAG → adaptation</p>
+      </div>
+    </div>
     <nav class="topnav">
-      <a href="/">Inventaire</a>
+      <a href="/">Inventory</a>
       <a href="/dashboard">Dashboard</a>
+      <button class="lang-switch" type="button" data-lang="en">EN</button>
+      <button class="lang-switch" type="button" data-lang="fr">FR</button>
     </nav>
   </header>
   <main>

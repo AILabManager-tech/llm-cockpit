@@ -2,27 +2,27 @@
   <h2>
     Gateway
     {% if gateway_enabled %}
-      <span class="pill st-ok">actif</span>
+      <span class="pill st-ok">active</span>
     {% else %}
-      <span class="pill st-error">désactivé</span>
+      <span class="pill st-error">disabled</span>
     {% endif %}
   </h2>
   <p class="poll-note">
-    Endpoint local OpenAI-compatible :
+    Local OpenAI-compatible endpoint:
     <code>POST /v1/chat/completions</code> · <code>GET /v1/models</code>.
-    Une app appelle <code>model:"&lt;rôle&gt;"</code> ou un modèle réel.
+    An app calls <code>model:"&lt;role&gt;"</code> or a real model.
   </p>
 
   {% if gateway_error %}
-    <p class="empty-state error">Routage indisponible : {{ gateway_error }}</p>
+    <p class="empty-state error">Routing unavailable: {{ gateway_error }}</p>
   {% else %}
   <table class="routes-table">
     <thead>
       <tr>
-        <th>Requête (rôle)</th>
-        <th>Résout vers</th>
-        <th>Statut</th>
-        <th>Raison</th>
+        <th>Request (role)</th>
+        <th>Resolves to</th>
+        <th>Status</th>
+        <th>Reason</th>
       </tr>
     </thead>
     <tbody>
@@ -40,7 +40,7 @@
           {% if r.ok %}
             <span class="pill st-ok">routable</span>
           {% else %}
-            <span class="pill st-error">non routable</span>
+            <span class="pill st-error">not routable</span>
           {% endif %}
         </td>
         <td class="detail">{{ r.reason }}</td>

@@ -1,5 +1,5 @@
 <div class="scoreboard">
-  <h3>Scoreboard évaluations (par rôle / modèle)</h3>
+  <h3>Evaluation scoreboard (by role / model)</h3>
 
   <form
     class="eval-run-form"
@@ -7,7 +7,7 @@
     hx-ext="json-enc"
     hx-swap="none"
     hx-on::after-request="htmx.trigger('#scoreboard-panel','refresh')">
-    <select name="suite" aria-label="Suite d'évaluation">
+    <select name="suite" aria-label="Evaluation suite">
       {% for s in suites %}
       <option value="{{ s }}">{{ s }}</option>
       {% endfor %}
@@ -15,29 +15,28 @@
     <input
       type="text"
       name="models"
-      placeholder="modèles séparés par des virgules (ou rôles)"
-      aria-label="Modèles à comparer">
-    <button type="submit" class="btn-refresh">Lancer l'éval</button>
+      placeholder="models separated by commas (or roles)"
+      aria-label="Models to compare">
+    <button type="submit" class="btn-refresh">Run eval</button>
   </form>
   <p class="poll-note">
-    Les évals passent par le routage réel du gateway et n'exécutent jamais le
-    code généré.
+    Evals go through the real gateway routing and never execute generated code.
   </p>
 
   {% if not scoreboard %}
-    <p class="empty-state">Aucun résultat d'évaluation pour l'instant.</p>
+    <p class="empty-state">No evaluation results yet.</p>
   {% else %}
   <table class="scoreboard-table">
     <thead>
       <tr>
-        <th>Rôle</th>
-        <th>Modèle</th>
-        <th>Réussite</th>
+        <th>Role</th>
+        <th>Model</th>
+        <th>Success</th>
         <th>Checks</th>
-        <th>Cas</th>
+        <th>Cases</th>
         <th>Runs</th>
-        <th>Latence moy.</th>
-        <th>Erreurs</th>
+        <th>Avg. latency</th>
+        <th>Errors</th>
       </tr>
     </thead>
     <tbody>
@@ -60,10 +59,10 @@
   {% endif %}
 
   {% if runs %}
-  <h3>Runs récents</h3>
+  <h3>Recent runs</h3>
   <table class="journal">
     <thead>
-      <tr><th>#</th><th>Horodatage</th><th>Suite</th><th>Rôle</th><th>Modèles</th><th>Cas</th></tr>
+      <tr><th>#</th><th>Timestamp</th><th>Suite</th><th>Role</th><th>Models</th><th>Cases</th></tr>
     </thead>
     <tbody>
       {% for run in runs %}

@@ -2,7 +2,7 @@
   <span class="dot"></span>
   <strong>Ollama</strong>
   <span class="status-label">
-    {{ 'joignable' if health.reachable else 'injoignable' }}
+    {{ 'reachable' if health.reachable else 'unreachable' }}
   </span>
   <code class="base-url">{{ health.base_url }}</code>
   {% if not health.reachable and health.error %}
@@ -10,30 +10,30 @@
   {% endif %}
 </div>
 
-{% if not health.reachable %}
+  {% if not health.reachable %}
   <p class="empty-state error">
-    Ollama est injoignable. Aucun inventaire disponible.
-    Vérifie que le service écoute sur <code>{{ health.base_url }}</code>.
+    Ollama is unreachable. No inventory is available.
+    Check that the service listens on <code>{{ health.base_url }}</code>.
   </p>
 {% elif models|length == 0 %}
   <p class="empty-state">
-    Ollama est joignable, mais aucun modèle n'est installé.
+    Ollama is reachable, but no model is installed.
   </p>
 {% else %}
   <table class="models">
     <thead>
       <tr>
-        <th>Modèle</th>
+        <th>Model</th>
         <th>Provider</th>
-        <th>État</th>
+        <th>State</th>
         <th>Source</th>
-        <th>Famille</th>
+        <th>Family</th>
         <th>Quant.</th>
-        <th>Taille</th>
+        <th>Size</th>
         <th>VRAM</th>
         <th>Digest</th>
-        <th>Modifié</th>
-        <th>Expire</th>
+        <th>Modified</th>
+        <th>Expires</th>
         <th>Actions</th>
       </tr>
     </thead>
@@ -44,9 +44,9 @@
         <td><span class="pill src">{{ m.provider }}</span></td>
         <td>
           {% if m.loaded %}
-            <span class="pill loaded">chargé</span>
+            <span class="pill loaded">loaded</span>
           {% else %}
-            <span class="pill idle">non chargé</span>
+            <span class="pill idle">not loaded</span>
           {% endif %}
         </td>
         <td>
@@ -73,7 +73,7 @@
               hx-vals='{"model": "{{ m.normalized_name }}"}'
               hx-swap="none"
               hx-on::after-request="htmx.trigger('#models-panel','refresh'); htmx.trigger('#actions-panel','refresh')">
-              Décharger
+              Unload
             </button>
             {% else %}
             <button
@@ -83,7 +83,7 @@
               hx-vals='{"model": "{{ m.normalized_name }}"}'
               hx-swap="none"
               hx-on::after-request="htmx.trigger('#models-panel','refresh'); htmx.trigger('#actions-panel','refresh')">
-              Charger
+              Load
             </button>
             {% endif %}
           {% else %}

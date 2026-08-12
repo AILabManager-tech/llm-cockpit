@@ -1,18 +1,18 @@
 <div class="roles">
-  <h2>Rôles</h2>
+  <h2>Roles</h2>
   {% if roles_error %}
     <p class="empty-state error">
-      Préférences de rôles illisibles : {{ roles_error }}
-      (le fichier n'est pas écrasé automatiquement.)
+      Roles preferences unreadable: {{ roles_error }}
+      (the file is not overwritten automatically.)
     </p>
   {% else %}
   <table class="roles-table">
     <thead>
       <tr>
-        <th>Rôle</th>
-        <th>Modèle assigné</th>
-        <th>Mis à jour</th>
-        <th>Tester</th>
+        <th>Role</th>
+        <th>Assigned model</th>
+        <th>Updated</th>
+        <th>Test</th>
       </tr>
     </thead>
     <tbody>
@@ -22,14 +22,14 @@
         <td>
           <select
             name="model"
-            aria-label="Modèle pour le rôle {{ role.role }}"
+            aria-label="Model for role {{ role.role }}"
             hx-put="/api/roles/{{ role.role }}"
             hx-ext="json-enc"
             hx-trigger="change"
             hx-swap="none"
             hx-on::after-request="htmx.trigger('#roles-panel','refresh')">
             <option value="" disabled {% if not role.model %}selected{% endif %}>
-              — non assigné —
+              — unassigned —
             </option>
             {% for m in models if m.installed and m.provider == "ollama" %}
             <option
@@ -48,7 +48,7 @@
             hx-swap="none"
             hx-on::after-request="htmx.trigger('#actions-panel','refresh')"
             {% if not role.model %}disabled{% endif %}>
-            Tester le rôle
+            Test role
           </button>
         </td>
       </tr>
@@ -56,7 +56,7 @@
     </tbody>
   </table>
   <p class="poll-note">
-    Le résultat d'un test de rôle apparaît dans le journal d'actions.
+    The result of a role test appears in the action log.
   </p>
   {% endif %}
 </div>

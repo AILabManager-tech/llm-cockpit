@@ -1,19 +1,19 @@
 <div class="actions-journal">
-  <h2>Journal d'actions</h2>
+  <h2>Action log</h2>
   {% if not actions_enabled %}
-    <p class="empty-state">Actions désactivées (<code>ACTIONS_ENABLED=0</code>).</p>
+    <p class="empty-state">Actions disabled (<code>ACTIONS_ENABLED=0</code>).</p>
   {% endif %}
   {% if not entries %}
-    <p class="empty-state">Aucune action enregistrée.</p>
+    <p class="empty-state">No actions recorded.</p>
   {% else %}
   <table class="journal">
     <thead>
       <tr>
-        <th>Horodatage</th>
+        <th>Timestamp</th>
         <th>Action</th>
-        <th>Modèle</th>
-        <th>Statut</th>
-        <th>Détail</th>
+        <th>Model</th>
+        <th>Status</th>
+        <th>Detail</th>
       </tr>
     </thead>
     <tbody>

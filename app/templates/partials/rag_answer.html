@@ -3,12 +3,12 @@
 {% elif answer %}
   <div class="rag-answer">
     {% if answer.error %}
-      <p class="empty-state error">Génération impossible : {{ answer.error }}</p>
+      <p class="empty-state error">Generation unavailable: {{ answer.error }}</p>
     {% else %}
       <p class="rag-answer-text">{{ answer.answer }}</p>
     {% endif %}
     {% if answer.model %}
-      <p class="poll-note">Modèle : {{ answer.model }}</p>
+      <p class="poll-note">Model: {{ answer.model }}</p>
     {% endif %}
     {% if answer.sources %}
       <h4>Sources</h4>
@@ -22,7 +22,7 @@
         {% endfor %}
       </ul>
     {% else %}
-      <p class="poll-note">Aucune source locale citée.</p>
+      <p class="poll-note">No local source cited.</p>
     {% endif %}
   </div>
 {% endif %}
