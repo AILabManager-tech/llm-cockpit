@@ -73,7 +73,7 @@ def run_pass_rate(eval_run_id: int) -> float:
 def attach_eval(version_id: int, eval_run_id: int) -> ModelVersion:
     version = store.get_model_version(version_id)
     if version is None:
-        raise RegistryError(f"version inconnue : {version_id}")
+        raise RegistryError(f"unknown version: {version_id}")
     rate = run_pass_rate(eval_run_id)
     store.set_version_eval(version_id, eval_run_id, rate)
     return _to_model_version(store.get_model_version(version_id))
@@ -82,15 +82,15 @@ def attach_eval(version_id: int, eval_run_id: int) -> ModelVersion:
 def promote(version_id: int) -> ModelVersion:
     version = store.get_model_version(version_id)
     if version is None:
-        raise RegistryError(f"version inconnue : {version_id}")
+        raise RegistryError(f"unknown version: {version_id}")
     if version["is_baseline"]:
-        raise PromotionError("le baseline est déjà la référence")
+        raise PromotionError("the baseline is already the reference")
     if version["eval_run_id"] is None or version["pass_rate"] is None:
-        raise PromotionError("aucune évaluation associée à cette version")
+        raise PromotionError("no evaluation attached to this version")
 
     baseline = store.get_baseline(version["base_model"])
     if baseline is None or baseline["pass_rate"] is None:
-        raise PromotionError("baseline non évalué : comparaison impossible")
+        raise PromotionError("baseline not evaluated: comparison impossible")
 
     if version["pass_rate"] <= baseline["pass_rate"]:
         raise PromotionError(
@@ -106,10 +106,10 @@ def rollback(version_id: int) -> ModelVersion:
     """Revient au baseline (non destructif : le candidat reste enregistré)."""
     version = store.get_model_version(version_id)
     if version is None:
-        raise RegistryError(f"version inconnue : {version_id}")
+        raise RegistryError(f"unknown version: {version_id}")
     baseline = store.get_baseline(version["base_model"])
     if baseline is None:
-        raise RegistryError("aucun baseline à restaurer")
+        raise RegistryError("no baseline to restore")
     store.set_active_version(version["base_model"], baseline["id"])
     return _to_model_version(store.get_model_version(baseline["id"]))
 

@@ -107,7 +107,7 @@ def test_assign_not_installed_refused(tmp_path, monkeypatch):
     _mock_inventory()
     resp = client.put("/api/roles/chat", json={"model": "ghost:latest"})
     assert resp.status_code == 400
-    assert "non installé" in resp.json()["detail"]
+    assert "not installed" in resp.json()["detail"]
     # Rien n'a été persisté.
     assert not (tmp_path / "roles.json").exists()
 
@@ -121,7 +121,7 @@ def test_assign_unknown_role_400(tmp_path, monkeypatch):
     _mock_inventory()
     resp = client.put("/api/roles/wizard", json={"model": "llama3.2:latest"})
     assert resp.status_code == 400
-    assert "rôle inconnu" in resp.json()["detail"]
+    assert "unknown role" in resp.json()["detail"]
 
 
 # --- test d'un rôle → réutilise le chemin test V1 + journal -------------
@@ -164,7 +164,7 @@ def test_role_test_unassigned_400(tmp_path, monkeypatch):
     _use_tmp(tmp_path, monkeypatch)
     resp = client.post("/api/roles/embedding/test")
     assert resp.status_code == 400
-    assert "non assigné" in resp.json()["detail"]
+    assert "not assigned" in resp.json()["detail"]
 
 
 # --- roles.json corrompu → erreur claire, pas d'écrasement --------------

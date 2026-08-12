@@ -34,8 +34,8 @@ def _action_error_detail(exc: httpx.HTTPError) -> str:
     if isinstance(exc, httpx.TimeoutException):
         return "timeout"
     if isinstance(exc, httpx.HTTPStatusError):
-        return f"erreur Ollama HTTP {exc.response.status_code}"
-    return "provider injoignable"
+        return f"Ollama HTTP error {exc.response.status_code}"
+    return "provider unreachable"
 
 
 def _parse_entry(entry: dict, *, source: str, loaded: bool) -> ModelInfo | None:
@@ -153,7 +153,7 @@ class OllamaAdapter(ProviderAdapter):
                 action="load",
                 model=model,
                 status="ok",
-                detail="modèle chargé",
+                detail="model loaded",
                 duration_ms=_ns_to_ms(data.get("total_duration")),
             )
         except httpx.HTTPError as exc:
@@ -176,7 +176,7 @@ class OllamaAdapter(ProviderAdapter):
                 action="unload",
                 model=model,
                 status="ok",
-                detail="modèle déchargé",
+                detail="model unloaded",
                 duration_ms=_ns_to_ms(data.get("total_duration")),
             )
         except httpx.HTTPError as exc:

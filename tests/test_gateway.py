@@ -120,7 +120,7 @@ def test_chat_unassigned_role_openai_error(tmp_path, monkeypatch):
     assert resp.status_code == 400
     body = resp.json()
     assert "error" in body
-    assert "non assigné" in body["error"]["message"]
+    assert "not assigned" in body["error"]["message"]
 
 
 # --- provider injoignable pendant le chat → 502 OpenAI ------------------

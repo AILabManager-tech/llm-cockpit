@@ -195,10 +195,10 @@ async def api_set_role(role: str, payload: RoleAssignRequest) -> RoleAssignment:
     try:
         return await get_role_service().set_role(role, payload.model)
     except UnknownRoleError as exc:
-        raise HTTPException(status_code=400, detail=f"rôle inconnu : {exc}") from exc
+        raise HTTPException(status_code=400, detail=f"unknown role: {exc}") from exc
     except ModelNotInstalledError as exc:
         raise HTTPException(
-            status_code=400, detail=f"modèle non installé : {exc}"
+            status_code=400, detail=f"model not installed: {exc}"
         ) from exc
     except RolesConfigError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -212,10 +212,10 @@ async def api_test_role(
     try:
         result, status_code = await get_role_service().test_role(role, prompt=prompt)
     except UnknownRoleError as exc:
-        raise HTTPException(status_code=400, detail=f"rôle inconnu : {exc}") from exc
+        raise HTTPException(status_code=400, detail=f"unknown role: {exc}") from exc
     except RoleNotAssignedError as exc:
         raise HTTPException(
-            status_code=400, detail=f"rôle non assigné : {exc}"
+            status_code=400, detail=f"role not assigned: {exc}"
         ) from exc
     except RolesConfigError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

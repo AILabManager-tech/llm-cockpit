@@ -146,7 +146,7 @@ def test_load_not_installed_refused_no_http(tmp_path, monkeypatch):
     assert resp.status_code == 400
     last = action_log.read_entries(limit=1)[0]
     assert last.status == "refused"
-    assert "non installé" in (last.detail or "")
+    assert "not installed" in (last.detail or "")
 
 
 # --- #5 unload non chargé → refus ---------------------------------------
@@ -161,7 +161,7 @@ def test_unload_not_loaded_refused(tmp_path, monkeypatch):
     assert resp.status_code == 400
     last = action_log.read_entries(limit=1)[0]
     assert last.status == "refused"
-    assert "non chargé" in (last.detail or "")
+    assert "not loaded" in (last.detail or "")
 
 
 # --- #6 action hors allowlist → refus (niveau service, pas d'endpoint) --

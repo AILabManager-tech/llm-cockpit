@@ -44,7 +44,7 @@ def _last_user_prompt(messages) -> str | None:
 @router.post(_CHAT_ROUTE)
 async def chat_completions(req: ChatRequest, request: Request):
     if not config.GATEWAY_ENABLED:
-        return _openai_error(404, "gateway désactivé", "not_found")
+        return _openai_error(404, "gateway disabled", "not_found")
 
     app_name = request.headers.get("x-cockpit-app") or None
     started = time.perf_counter()
@@ -143,7 +143,7 @@ async def chat_completions(req: ChatRequest, request: Request):
 @router.get("/v1/models")
 async def list_models():
     if not config.GATEWAY_ENABLED:
-        return _openai_error(404, "gateway désactivé", "not_found")
+        return _openai_error(404, "gateway disabled", "not_found")
 
     registry = RegistryService()
     try:

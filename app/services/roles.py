@@ -52,7 +52,7 @@ def _read_assignments() -> dict[str, dict]:
         with open(path, encoding="utf-8") as fh:
             data = json.load(fh)
     except (ValueError, OSError) as exc:
-        raise RolesConfigError(f"roles.json illisible : {exc}") from exc
+        raise RolesConfigError(f"roles.json unreadable: {exc}") from exc
     assignments = data.get("assignments") if isinstance(data, dict) else None
     if not isinstance(assignments, dict):
         raise RolesConfigError(
@@ -110,7 +110,7 @@ class RoleService:
             raise UnknownRoleError(role)
         norm = normalize_name({"model": model})
         if not norm:
-            raise ModelNotInstalledError("nom de modèle vide")
+            raise ModelNotInstalledError("empty model name")
         if norm not in await self._installed_names():
             raise ModelNotInstalledError(norm)
 

@@ -41,16 +41,16 @@ def list_suites() -> list[str]:
 def load_suite(name: str) -> dict:
     path = _suite_path(name)
     if not path.exists():
-        raise SuiteError(f"suite introuvable : {name}")
+        raise SuiteError(f"suite not found: {name}")
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
-        raise SuiteError(f"suite YAML invalide ({name}) : {exc}") from exc
+        raise SuiteError(f"invalid YAML suite ({name}): {exc}") from exc
     if not isinstance(data, dict) or not isinstance(data.get("cases"), list):
-        raise EvalValidationError(f"suite mal formée : {name}")
+        raise EvalValidationError(f"malformed suite: {name}")
     for case in data["cases"]:
         if not isinstance(case, dict) or "prompt" not in case:
-            raise EvalValidationError(f"cas invalide dans {name} : {case!r}")
+            raise EvalValidationError(f"invalid case in {name}: {case!r}")
         for spec in case.get("checks", []):
             try:
                 checks.validate_spec(spec)
@@ -73,7 +73,7 @@ class EvalRunner:
     ) -> EvalRunSummary:
         """Joue une suite déjà chargée (permet l'injection RAG en V7)."""
         if not models:
-            raise EvalValidationError("aucun modèle fourni")
+            raise EvalValidationError("no model provided")
         role = suite.get("role")
         cases = suite["cases"]
 
