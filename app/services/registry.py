@@ -63,7 +63,7 @@ def _read_providers() -> list[ProviderConfig]:
         with open(path, encoding="utf-8") as fh:
             data = json.load(fh)
     except (ValueError, OSError) as exc:
-        raise RegistryConfigError(f"providers.json illisible : {exc}") from exc
+        raise RegistryConfigError(f"providers.json unreadable: {exc}") from exc
     providers = data.get("providers") if isinstance(data, dict) else None
     if not isinstance(providers, list):
         raise RegistryConfigError(
@@ -113,7 +113,7 @@ class RegistryService:
             raise UnknownProviderKindError(pc.kind)
         providers = _read_providers()
         if any(p.id == pc.id for p in providers):
-            raise DuplicateProviderError(f"id déjà enregistré : {pc.id}")
+            raise DuplicateProviderError(f"id already registered: {pc.id}")
         if any(p.base_url == pc.base_url for p in providers):
             raise DuplicateProviderError(
                 f"base_url déjà enregistré : {pc.base_url}"

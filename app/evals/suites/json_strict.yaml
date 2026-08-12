@@ -1,17 +1,17 @@
 name: json_strict
 role: json
-description: Le modèle doit produire du JSON valide et minimal, sans texte autour.
+description: The model must produce valid, minimal JSON with no surrounding text.
 cases:
   - name: bool_flag
     prompt: |
-      Réponds UNIQUEMENT avec un objet JSON valide contenant la clé "ok" à true.
-      Pas de texte autour, pas de balises Markdown.
+      Reply ONLY with a valid JSON object containing the key "ok" set to true.
+      No surrounding text, no Markdown fences.
     checks:
       - json_valid
       - contains:ok
   - name: list_three
     prompt: |
-      Réponds UNIQUEMENT avec un tableau JSON de trois entiers : 1, 2, 3.
+      Reply ONLY with a JSON array of three integers: 1, 2, 3.
     checks:
       - json_valid
       - non_empty

@@ -1,11 +1,11 @@
 name: summary
 role: chat
-description: Résumé court et non vide.
+description: Short, non-empty summary.
 cases:
   - name: one_sentence
     prompt: |
-      Résume en une seule phrase : le ciel paraît bleu car l'atmosphère diffuse
-      davantage la lumière de courte longueur d'onde.
+      Summarize in a single sentence: the sky looks blue because the atmosphere
+      scatters short-wavelength light more strongly.
     checks:
       - non_empty
       - max_length:600

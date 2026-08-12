@@ -46,13 +46,13 @@ class RoutingService:
     ) -> RouteDecision:
         if name not in config.ROLES:
             return RouteDecision(
-                requested=requested, ok=False, reason=f"rôle inconnu : {name}"
+                requested=requested, ok=False, reason=f"unknown role: {name}"
             )
         entry = roles_module._read_assignments().get(name)
         if not entry or not entry.get("model"):
             return RouteDecision(
                 requested=requested, resolved_role=name, ok=False,
-                reason="rôle non assigné",
+                reason="role not assigned",
             )
         provider = entry.get("provider", "ollama")
         model = entry["model"]
@@ -63,11 +63,11 @@ class RoutingService:
             return RouteDecision(
                 requested=requested, resolved_role=name, provider=provider,
                 model=model, ok=False,
-                reason="modèle du rôle indisponible (provider injoignable ou absent)",
+                reason="role model unavailable (provider unreachable or model missing)",
             )
         return RouteDecision(
             requested=requested, resolved_role=name, provider=provider,
-            model=model, ok=True, reason=f"rôle '{name}' → {provider}/{model}",
+            model=model, ok=True, reason=f"role '{name}' → {provider}/{model}",
         )
 
     def _resolve_model(
@@ -77,11 +77,11 @@ class RoutingService:
         if not matches:
             return RouteDecision(
                 requested=requested, ok=False,
-                reason="modèle introuvable dans l'inventaire agrégé",
+                reason="model not found in the aggregated inventory",
             )
         chosen = matches[0]
         return RouteDecision(
             requested=requested, provider=chosen.provider,
             model=chosen.normalized_name, ok=True,
-            reason=f"modèle réel → {chosen.provider}/{chosen.normalized_name}",
+            reason=f"real model → {chosen.provider}/{chosen.normalized_name}",
         )

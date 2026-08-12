@@ -124,7 +124,7 @@ class OpenAICompatAdapter(ProviderAdapter):
             model=model,
             provider=self.provider_id,
             status="unsupported",
-            detail="load non supporté par un provider OpenAI-compatible",
+            detail="load is not supported by an OpenAI-compatible provider",
         )
 
     async def unload(self, model: str) -> ActionResult:
@@ -133,7 +133,7 @@ class OpenAICompatAdapter(ProviderAdapter):
             model=model,
             provider=self.provider_id,
             status="unsupported",
-            detail="unload non supporté par un provider OpenAI-compatible",
+            detail="unload is not supported by an OpenAI-compatible provider",
         )
 
     async def generate(self, req: GenerateRequest) -> GenerateResult:

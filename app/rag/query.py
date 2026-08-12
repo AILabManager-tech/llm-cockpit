@@ -16,9 +16,9 @@ from app.services.registry import RegistryService
 from app.services.routing import RoutingService
 
 RAG_SYSTEM = (
-    "Tu réponds uniquement à partir du CONTEXTE fourni. Cite les sources sous la "
-    "forme [doc#n]. Si le contexte ne contient pas la réponse, dis-le clairement "
-    "sans inventer."
+    "Answer only from the provided CONTEXT. Cite sources as [doc#n]. If the "
+    "context does not contain the answer, say so plainly instead of inventing "
+    "one. Answer in the language of the question."
 )
 
 
@@ -62,14 +62,14 @@ def build_context(scored: list[tuple[float, dict]]) -> str:
 def build_rag_prompt(query: str, context: str) -> str:
     if not context:
         return (
-            "CONTEXTE: (aucune source locale disponible)\n\n"
+            "CONTEXT: (no local source available)\n\n"
             f"QUESTION: {query}\n\n"
-            "Si aucune source locale ne couvre la question, dis-le honnêtement."
+            "If no local source covers the question, say so honestly."
         )
     return (
-        f"CONTEXTE:\n{context}\n\n"
+        f"CONTEXT:\n{context}\n\n"
         f"QUESTION: {query}\n\n"
-        "Réponds en t'appuyant sur le CONTEXTE et cite les sources [doc#n]."
+        "Answer using the CONTEXT and cite the sources [doc#n]."
     )
 
 
@@ -83,7 +83,7 @@ async def answer(query: str, role: str | None = None) -> RagAnswer:
     if not scored:
         return RagAnswer(
             query=query,
-            answer="Aucune source pertinente trouvée dans les documents locaux.",
+            answer="No relevant source found in the local documents.",
             used_rag=True,
             sources=[],
         )

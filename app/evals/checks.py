@@ -17,48 +17,48 @@ class CheckError(Exception):
 
 def _non_empty(arg, response, latency_ms):
     ok = bool(response and response.strip())
-    return ok, "non vide" if ok else "réponse vide"
+    return ok, "non-empty" if ok else "empty response"
 
 
 def _json_valid(arg, response, latency_ms):
     try:
         json.loads(response)
-        return True, "JSON valide"
+        return True, "valid JSON"
     except (ValueError, TypeError):
-        return False, "JSON invalide"
+        return False, "invalid JSON"
 
 
 def _contains(arg, response, latency_ms):
     ok = arg in (response or "")
-    return ok, (f"contient '{arg}'" if ok else f"ne contient pas '{arg}'")
+    return ok, (f"contains '{arg}'" if ok else f"does not contain '{arg}'")
 
 
 def _regex(arg, response, latency_ms):
     ok = re.search(arg, response or "") is not None
-    return ok, (f"match /{arg}/" if ok else f"pas de match /{arg}/")
+    return ok, (f"match /{arg}/" if ok else f"no match /{arg}/")
 
 
 def _equals(arg, response, latency_ms):
     ok = (response or "").strip() == arg.strip()
-    return ok, "égal" if ok else "différent"
+    return ok, "equal" if ok else "different"
 
 
 def _min_length(arg, response, latency_ms):
     n = len(response or "")
     ok = n >= int(arg)
-    return ok, f"longueur {n} (min {arg})"
+    return ok, f"length {n} (min {arg})"
 
 
 def _max_length(arg, response, latency_ms):
     n = len(response or "")
     ok = n <= int(arg)
-    return ok, f"longueur {n} (max {arg})"
+    return ok, f"length {n} (max {arg})"
 
 
 def _latency_lt(arg, response, latency_ms):
     threshold = float(arg)
     if latency_ms is None:
-        return False, "latence inconnue"
+        return False, "unknown latency"
     ok = latency_ms < threshold
     return ok, f"{latency_ms:.0f}ms {'<' if ok else '>='} {threshold:.0f}ms"
 
@@ -87,16 +87,16 @@ def validate_spec(spec: str) -> None:
     """Lève CheckError si le check est inconnu ou mal formé. Pas d'exécution."""
     name, arg = parse_spec(spec)
     if name not in _REGISTRY:
-        raise CheckError(f"check inconnu : {name}")
+        raise CheckError(f"unknown check: {name}")
     _fn, needs_arg, numeric = _REGISTRY[name]
     if needs_arg and (arg is None or arg == ""):
-        raise CheckError(f"check '{name}' requiert un argument")
+        raise CheckError(f"check '{name}' requires an argument")
     if numeric and arg is not None:
         try:
             float(arg)
         except ValueError as exc:
             raise CheckError(
-                f"check '{name}' requiert un argument numérique : {arg!r}"
+                f"check '{name}' requires a numeric argument: {arg!r}"
             ) from exc
 
 

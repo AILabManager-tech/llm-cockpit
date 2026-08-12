@@ -31,9 +31,9 @@ def resolve_in_datasets_dir(path: str) -> Path:
     candidate = Path(path)
     resolved = (candidate if candidate.is_absolute() else root / candidate).resolve()
     if resolved != root and root not in resolved.parents:
-        raise DatasetError(f"chemin hors du dossier autorisé : {path}")
+        raise DatasetError(f"path outside the allowed directory: {path}")
     if not resolved.is_file():
-        raise DatasetError(f"fichier introuvable : {path}")
+        raise DatasetError(f"file not found: {path}")
     return resolved
 
 
@@ -65,17 +65,17 @@ def validate_file(path: Path) -> int:
                 obj = json.loads(line)
             except ValueError as exc:
                 raise DatasetError(
-                    f"ligne {lineno} : JSON invalide ({exc})"
+                    f"line {lineno}: invalid JSON ({exc})"
                 ) from exc
             if not _valid_row(obj):
                 raise DatasetError(
-                    f"ligne {lineno} : champs requis manquants "
-                    "(prompt/response, instruction/output ou messages)"
+                    f"line {lineno}: missing required fields "
+                    "(prompt/response, instruction/output or messages)"
                 )
             rows += 1
     if rows < config.TRAIN_MIN_ROWS:
         raise DatasetError(
-            f"dataset trop petit : {rows} ligne(s) < {config.TRAIN_MIN_ROWS}"
+            f"dataset too small: {rows} row(s) < {config.TRAIN_MIN_ROWS}"
         )
     return rows
 
@@ -84,7 +84,7 @@ def create_dataset(name: str, path: str) -> Dataset:
     resolved = resolve_in_datasets_dir(path)
     rows = validate_file(resolved)
     ts = datetime.now(timezone.utc).isoformat()
-    detail = f"{rows} exemples validés"
+    detail = f"{rows} validated examples"
     dataset_id = store.insert_dataset(
         ts=ts, name=name, path=str(resolved), rows=rows, status="valid",
         detail=detail,

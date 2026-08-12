@@ -29,7 +29,7 @@ async def ensure_model_installed() -> str:
     installed = {m.normalized_name for m in await _adapter().list_installed()}
     if model not in installed:
         raise EmbeddingModelMissing(
-            f"modèle d'embedding non installé : {config.RAG_EMBED_MODEL}"
+            f"embedding model not installed: {config.RAG_EMBED_MODEL}"
         )
     return model
 

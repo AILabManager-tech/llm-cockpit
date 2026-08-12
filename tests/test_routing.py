@@ -84,7 +84,7 @@ def test_resolve_unassigned_role(tmp_path, monkeypatch):
     d = asyncio.run(_service().resolve("embedding"))
     assert d.ok is False
     assert d.resolved_role == "embedding"
-    assert "non assigné" in d.reason
+    assert "not assigned" in d.reason
 
 
 @respx.mock
@@ -93,7 +93,7 @@ def test_resolve_unknown_role(tmp_path, monkeypatch):
     _mock_ollama_ok()
     d = asyncio.run(_service().resolve("role:wizard"))
     assert d.ok is False
-    assert "rôle inconnu" in d.reason
+    assert "unknown role" in d.reason
 
 
 @respx.mock
@@ -113,7 +113,7 @@ def test_resolve_real_model_absent(tmp_path, monkeypatch):
     _mock_ollama_ok()
     d = asyncio.run(_service().resolve("ghost:latest"))
     assert d.ok is False
-    assert "introuvable" in d.reason
+    assert "not found" in d.reason
 
 
 @respx.mock
@@ -129,7 +129,7 @@ def test_resolve_role_model_unavailable_when_provider_down(tmp_path, monkeypatch
     )
     d = asyncio.run(_service().resolve("chat"))
     assert d.ok is False
-    assert "indisponible" in d.reason
+    assert "unavailable" in d.reason
 
 
 @respx.mock

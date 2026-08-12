@@ -101,4 +101,4 @@ def test_answer_empty_store_is_honest(tmp_path, monkeypatch):
     ans = asyncio.run(rag_query.answer("question", role="llama3.2:latest"))
     assert ans.used_rag is True
     assert ans.sources == []
-    assert "Aucune source" in ans.answer
+    assert "No relevant source" in ans.answer

@@ -38,15 +38,15 @@ async def create_job(
     dataset_id: int, base_model: str | None, method: str
 ) -> dict:
     if method not in config.TRAIN_ALLOWED_METHODS:
-        raise JobError(f"méthode non supportée : {method}")
+        raise JobError(f"unsupported method: {method}")
     resolved_base = (base_model or config.TRAIN_BASE_MODEL or "").strip()
     if not resolved_base:
         raise JobError(
-            "base_model requis (fournir base_model ou définir TRAIN_BASE_MODEL)"
+            "base_model is required (pass base_model or set TRAIN_BASE_MODEL)"
         )
     dataset = store.get_dataset(dataset_id)
     if dataset is None or dataset["status"] != "valid":
-        raise JobError(f"dataset invalide ou introuvable : {dataset_id}")
+        raise JobError(f"invalid or unknown dataset: {dataset_id}")
 
     job_id = store.insert_train_job(
         ts=_now_iso(), dataset_id=dataset_id, base_model=resolved_base,
@@ -59,7 +59,7 @@ async def run_job(job_id: int, spawn=asyncio.create_subprocess_exec) -> dict:
     """Exécute le job. `spawn` est injectable (tests) ; jamais de shell."""
     job = store.get_train_job(job_id)
     if job is None:
-        raise JobError(f"job inconnu : {job_id}")
+        raise JobError(f"unknown job: {job_id}")
     dataset = store.get_dataset(job["dataset_id"])
     output_dir = _job_output_dir(job_id)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -73,8 +73,8 @@ async def run_job(job_id: int, spawn=asyncio.create_subprocess_exec) -> dict:
 
     # Pas de runner configuré → dry-run : on prépare/valide, on ne lance rien.
     if not config.TRAIN_RUNNER:
-        tail = "dry-run : aucun TRAIN_RUNNER configuré. Commande qui serait " \
-               f"exécutée : {' '.join(argv)}"
+        tail = "dry-run: no TRAIN_RUNNER configured. Command that would " \
+               f"have run: {' '.join(argv)}"
         store.update_train_job(job_id, status="dry_run", log_tail=tail)
         return store.get_train_job(job_id)
 
@@ -122,7 +122,7 @@ async def run_job(job_id: int, spawn=asyncio.create_subprocess_exec) -> dict:
 async def cancel_job(job_id: int) -> dict:
     job = store.get_train_job(job_id)
     if job is None:
-        raise JobError(f"job inconnu : {job_id}")
+        raise JobError(f"unknown job: {job_id}")
     proc = _RUNNING.get(job_id)
     if proc is not None:
         try:

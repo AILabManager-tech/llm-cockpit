@@ -10,7 +10,7 @@ from app.schemas import ActionResult, GenerateRequest
 from app.services import action_log
 from app.services.inventory import InventoryService, normalize_name
 
-DEFAULT_TEST_PROMPT = "Réponds OK."
+DEFAULT_TEST_PROMPT = "Reply with OK."
 
 
 class ActionService:
@@ -34,12 +34,12 @@ class ActionService:
         if not config.ACTIONS_ENABLED:
             action_log.append_entry(
                 action=action, model=model, status="refused",
-                detail="actions désactivées",
+                detail="actions disabled",
             )
             return (
                 ActionResult(
                     action=action, model=model, status="unsupported",
-                    detail="actions désactivées",
+                    detail="actions disabled",
                 ),
                 403,
             )
@@ -48,12 +48,12 @@ class ActionService:
         if action not in config.ACTION_ALLOWLIST:
             action_log.append_entry(
                 action=action, model=model, status="refused",
-                detail="action hors allowlist",
+                detail="action not in allowlist",
             )
             return (
                 ActionResult(
                     action=action, model=model, status="unsupported",
-                    detail="action hors allowlist",
+                    detail="action not in allowlist",
                 ),
                 400,
             )
@@ -63,12 +63,12 @@ class ActionService:
         if not norm:
             action_log.append_entry(
                 action=action, model=model, status="refused",
-                detail="nom de modèle vide",
+                detail="empty model name",
             )
             return (
                 ActionResult(
                     action=action, model=model, status="error",
-                    detail="nom de modèle vide",
+                    detail="empty model name",
                 ),
                 400,
             )
@@ -78,24 +78,24 @@ class ActionService:
         if action in {"load", "test"} and norm not in installed:
             action_log.append_entry(
                 action=action, model=norm, status="refused",
-                detail="modèle non installé",
+                detail="model not installed",
             )
             return (
                 ActionResult(
                     action=action, model=norm, status="error",
-                    detail="modèle non installé",
+                    detail="model not installed",
                 ),
                 400,
             )
         if action == "unload" and norm not in loaded:
             action_log.append_entry(
                 action=action, model=norm, status="refused",
-                detail="modèle non chargé",
+                detail="model not loaded",
             )
             return (
                 ActionResult(
                     action=action, model=norm, status="error",
-                    detail="modèle non chargé",
+                    detail="model not loaded",
                 ),
                 400,
             )

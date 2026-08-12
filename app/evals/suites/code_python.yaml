@@ -1,16 +1,16 @@
 name: code_python
 role: code
-description: Petites fonctions Python. Aucun code généré n'est jamais exécuté.
+description: Small Python functions. Generated code is never executed.
 cases:
   - name: add_function
     prompt: |
-      Écris une fonction Python nommée add qui prend a et b et renvoie leur
-      somme. Donne uniquement le code, sans explication.
+      Write a Python function named add that takes a and b and returns their
+      sum. Give the code only, no explanation.
     checks:
       - non_empty
       - contains:def add
   - name: hello_print
-    prompt: "Écris print('hello') en Python. Donne uniquement le code."
+    prompt: "Write print('hello') in Python. Give the code only."
     checks:
       - contains:print
       - latency_lt:60000
