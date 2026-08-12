@@ -17,7 +17,7 @@ Date de ce point : 2026-08-12
 - `llm-cockpit-github-export/` = **supprimé le 2026-08-12** (snapshot périmé, un seul
   fichier unique : un `MANIFEST.md` d'inventaire que le repo git rend inutile).
 - `llm-cockpit-v0/` = **supprimé le 2026-08-12** (un `README.md` court obsolète, port 8000).
-- Reste dans le parent : `llm-cockpit-github-export.zip` (152 Ko), même statut périmé.
+- `llm-cockpit-github-export.zip` = **supprimé le 2026-08-12** (zip du dossier ci-dessus).
 
 ## DONE
 
@@ -44,11 +44,11 @@ Date de ce point : 2026-08-12
 - [x] LICENSE MIT + `uv.lock` trackés, `docs/` interne retiré du tree publié
 - [x] `main` fast-forward de V0 → V8 (historique linéaire, branches `phase/*` intactes)
 - [x] 5 commits atomiques (`a573fb6` → `79b8188`)
-- [x] `llm-cockpit-v0/` et `llm-cockpit-github-export/` supprimés (go utilisateur 2026-08-12)
+- [x] `llm-cockpit-v0/`, `llm-cockpit-github-export/` et son `.zip` supprimés
+      (go utilisateur 2026-08-12) — parent nettoyé, il ne reste que le repo, `COCKPIT_LLM/` et les logos
 
 ## TODO — décisions utilisateur
 
-- [ ] **Supprimer `llm-cockpit-github-export.zip`** — dernier résidu de l'export périmé
 - [ ] **Publier sur GitHub ?** Le repo n'a aucun remote. `git push` = hard-stop.
       Si oui : créer le repo, `git remote add origin …`, exclure `llm_cockpit.md`
 - [ ] **Fenêtre native** : le bundle PyInstaller ne peut pas importer le `gi` système →
