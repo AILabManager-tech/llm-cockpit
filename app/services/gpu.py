@@ -59,6 +59,10 @@ def parse_output(raw: str) -> GpuMemory | None:
             total, used, free = (int(p) for p in parts)
         except ValueError:
             continue
+        if total <= 0:
+            # A card reporting no memory at all is a broken reading, not a
+            # fact. Returning it would divide by zero in the usage bar.
+            continue
         return GpuMemory(
             total_bytes=total * MIB,
             used_bytes=used * MIB,

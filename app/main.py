@@ -1,10 +1,9 @@
 import asyncio
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
-from datetime import datetime
-
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -101,6 +100,16 @@ def _short_timestamp(value: str | None) -> str:
 
 
 templates.env.filters["short_ts"] = _short_timestamp
+
+
+async def _read_gpu() -> GpuMemory | None:
+    """GPU memory without blocking the event loop.
+
+    read_memory() shells out to nvidia-smi with a 2 s timeout. Called inline
+    from an async endpoint, a slow driver would freeze every other request —
+    including a generation in flight through the gateway.
+    """
+    return await asyncio.to_thread(gpu_service.read_memory)
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 # V4 : gateway OpenAI-compatible (routes /v1/*), local uniquement.
@@ -149,7 +158,7 @@ async def api_health() -> ProviderHealth:
 @app.get("/api/gpu", response_model=GpuMemory | None)
 async def api_gpu() -> GpuMemory | None:
     """Current GPU memory, or null when no GPU can be read."""
-    return gpu_service.read_memory()
+    return await _read_gpu()
 
 
 @app.get("/api/models", response_model=list[ModelInfo])
@@ -547,7 +556,7 @@ async def page_models(request: Request) -> HTMLResponse:
             "active_tab": "/",
             "health": health,
             "models": models,
-            "gpu": gpu_service.read_memory(),
+            "gpu": await _read_gpu(),
             "fit": gpu_service.fit_verdict,
             "actions_enabled": config.ACTIONS_ENABLED,
             "entries": action_log.read_entries(limit=50),
@@ -629,7 +638,7 @@ async def partials_models(request: Request) -> HTMLResponse:
         {
             "health": health,
             "models": models,
-            "gpu": gpu_service.read_memory(),
+            "gpu": await _read_gpu(),
             "fit": gpu_service.fit_verdict,
             "actions_enabled": config.ACTIONS_ENABLED,
         },

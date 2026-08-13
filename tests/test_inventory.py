@@ -234,3 +234,19 @@ def test_partials_omit_the_fit_column_without_a_gpu(monkeypatch):
     )
     body = client.get("/partials/models").text
     assert "GPU memory" not in body      # rien d'invente quand on ne sait pas
+
+
+@respx.mock
+def test_inventory_survives_a_gpu_reporting_zero(monkeypatch):
+    """A broken nvidia-smi reading must not take the page down."""
+    from app.services import gpu as gpu_service
+
+    monkeypatch.setattr(gpu_service, "read_memory",
+                        lambda: gpu_service.parse_output("0, 0, 0"))
+    respx.get(f"{BASE}/api/tags").mock(
+        return_value=httpx.Response(200, json={"models": []})
+    )
+    respx.get(f"{BASE}/api/ps").mock(
+        return_value=httpx.Response(200, json={"models": []})
+    )
+    assert client.get("/partials/models").status_code == 200

@@ -71,3 +71,51 @@ def test_no_verdict_without_a_size_or_without_a_gpu():
     assert gpu.fit_verdict(None, _card(16, 10)) is None
     assert gpu.fit_verdict(4 * GIB, None) is None
     assert gpu.fit_verdict(4 * GIB, _card(0, 0)) is None
+
+
+# --- Régressions trouvées en revue ---------------------------------------
+
+
+def test_a_card_reporting_zero_total_is_no_reading_at_all():
+    # nvidia-smi can report zeros while a driver is resetting. Accepting that
+    # divided by zero in the usage bar and returned HTTP 500 on the inventory.
+    assert gpu.parse_output("0, 0, 0") is None
+    assert gpu.parse_output("0, 0, 0\n16303, 5540, 10293") is not None
+
+
+def test_reading_the_gpu_does_not_block_the_event_loop():
+    """nvidia-smi is synchronous with a 2 s timeout.
+
+    Called inline from an async endpoint it froze every other request, the
+    gateway included. The endpoints must hand it to a thread.
+    """
+    import asyncio
+    import time
+
+    from app import main
+
+    def _slow():
+        time.sleep(0.25)
+        return None
+
+    async def scenario():
+        ticks = 0
+
+        async def ticker():
+            nonlocal ticks
+            while True:
+                await asyncio.sleep(0.01)
+                ticks += 1
+
+        task = asyncio.create_task(ticker())
+        await asyncio.sleep(0)
+        main.gpu_service.read_memory = _slow
+        try:
+            await main._read_gpu()
+        finally:
+            task.cancel()
+            main.gpu_service.read_memory = gpu.read_memory
+        return ticks
+
+    # The loop must keep running while the slow call is in flight.
+    assert asyncio.run(scenario()) > 5
