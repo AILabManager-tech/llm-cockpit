@@ -10,6 +10,21 @@
   {% endif %}
 </div>
 
+{% if gpu %}
+  <div class="gpu-status">
+    <span class="gpu-label">GPU memory</span>
+    <span class="gpu-bar" role="img"
+          aria-label="{{ (gpu.used_bytes / gpu.total_bytes * 100) | round | int }}% used">
+      <span class="gpu-bar-fill"
+            style="width: {{ (gpu.used_bytes / gpu.total_bytes * 100) | round(1) }}%"></span>
+    </span>
+    <span class="gpu-figures">
+      <strong>{{ gpu.free_bytes | filesizeformat(true) }}</strong> free
+      of {{ gpu.total_bytes | filesizeformat(true) }}
+    </span>
+  </div>
+{% endif %}
+
   {% if not health.reachable %}
   <p class="empty-state error">
     Ollama is unreachable. No inventory is available.
@@ -29,8 +44,9 @@
         <th>Source</th>
         <th>Family</th>
         <th>Quant.</th>
-        <th>Size</th>
-        <th>VRAM</th>
+        <th class="num">Size</th>
+        <th class="num">VRAM</th>
+        {% if gpu %}<th>Fit</th>{% endif %}
         <th>Digest</th>
         <th>Modified</th>
         <th>Expires</th>
@@ -58,11 +74,27 @@
         </td>
         <td>{{ m.family or "—" }}</td>
         <td>{{ m.quantization or "—" }}</td>
-        <td>{{ m.size if m.size is not none else "—" }}</td>
-        <td>{{ m.size_vram if m.size_vram is not none else "—" }}</td>
+        <td class="num">{{ m.size | filesizeformat(true) if m.size is not none else "—" }}</td>
+        <td class="num">{{ m.size_vram | filesizeformat(true) if m.size_vram is not none else "—" }}</td>
+        {% if gpu %}
+        <td>
+          {% set verdict = fit(m.size, gpu) %}
+          {% if verdict == "fits" %}
+            <span class="pill fit-ok" title="Fits in the memory free right now">fits</span>
+          {% elif verdict == "tight" %}
+            <span class="pill fit-tight"
+                  title="Fits on the card, but not in the memory free right now">tight</span>
+          {% elif verdict == "too_large" %}
+            <span class="pill fit-no"
+                  title="Larger than this GPU: it will spill over to the CPU">too large</span>
+          {% else %}
+            <span class="muted">—</span>
+          {% endif %}
+        </td>
+        {% endif %}
         <td class="digest">{{ (m.digest[:12] ~ "…") if m.digest else "—" }}</td>
-        <td>{{ m.modified_at or "—" }}</td>
-        <td>{{ m.expires_at or "—" }}</td>
+        <td class="ts">{{ m.modified_at | short_ts }}</td>
+        <td class="ts">{{ m.expires_at | short_ts }}</td>
         <td class="row-actions">
           {% if actions_enabled and m.provider == "ollama" %}
             {% if m.loaded %}
@@ -72,6 +104,7 @@
               hx-ext="json-enc"
               hx-vals='{"model": "{{ m.normalized_name }}"}'
               hx-swap="none"
+              hx-disabled-elt="this"
               hx-on::after-request="htmx.trigger('#models-panel','refresh'); htmx.trigger('#actions-panel','refresh')">
               Unload
             </button>
@@ -82,6 +115,7 @@
               hx-ext="json-enc"
               hx-vals='{"model": "{{ m.normalized_name }}"}'
               hx-swap="none"
+              hx-disabled-elt="this"
               hx-on::after-request="htmx.trigger('#models-panel','refresh'); htmx.trigger('#actions-panel','refresh')">
               Load
             </button>

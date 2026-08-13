@@ -3,6 +3,8 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import HTMLResponse
+from datetime import datetime
+
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -30,6 +32,7 @@ from app.schemas import (
     DatasetCreateRequest,
     EvalRunRequest,
     EvalRunSummary,
+    GpuMemory,
     ModelInfo,
     ModelVersion,
     PromoteRequest,
@@ -78,12 +81,26 @@ from app.services.roles import (
     RolesConfigError,
     UnknownRoleError,
 )
+from app.services import gpu as gpu_service
 from app.services.routing import RoutingService
 
 BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(title="LLM Cockpit", description="Cockpit local-first multi-LLM.")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+
+
+def _short_timestamp(value: str | None) -> str:
+    """ISO timestamps are unreadable in a table: keep minutes, drop the rest."""
+    if not value:
+        return "—"
+    try:
+        return datetime.fromisoformat(value).strftime("%Y-%m-%d %H:%M")
+    except (TypeError, ValueError):
+        return value
+
+
+templates.env.filters["short_ts"] = _short_timestamp
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
 
 # V4 : gateway OpenAI-compatible (routes /v1/*), local uniquement.
@@ -127,6 +144,12 @@ def get_eval_runner() -> EvalRunner:
 @app.get("/api/health", response_model=ProviderHealth)
 async def api_health() -> ProviderHealth:
     return await get_adapter().healthcheck()
+
+
+@app.get("/api/gpu", response_model=GpuMemory | None)
+async def api_gpu() -> GpuMemory | None:
+    """Current GPU memory, or null when no GPU can be read."""
+    return gpu_service.read_memory()
 
 
 @app.get("/api/models", response_model=list[ModelInfo])
@@ -516,6 +539,7 @@ async def _aggregate_models() -> list[ModelInfo]:
 async def index(request: Request) -> HTMLResponse:
     health = await get_adapter().healthcheck()
     models = await _aggregate_models()
+    gpu = gpu_service.read_memory()
     roles, roles_error = await _roles_view()
     providers, drift, providers_error = await _providers_view()
     routes, gateway_error = await _gateway_view()
@@ -525,6 +549,8 @@ async def index(request: Request) -> HTMLResponse:
         {
             "health": health,
             "models": models,
+            "gpu": gpu,
+            "fit": gpu_service.fit_verdict,
             "actions_enabled": config.ACTIONS_ENABLED,
             "entries": action_log.read_entries(limit=50),
             "roles": roles,
@@ -549,6 +575,8 @@ async def partials_models(request: Request) -> HTMLResponse:
         {
             "health": health,
             "models": models,
+            "gpu": gpu_service.read_memory(),
+            "fit": gpu_service.fit_verdict,
             "actions_enabled": config.ACTIONS_ENABLED,
         },
     )

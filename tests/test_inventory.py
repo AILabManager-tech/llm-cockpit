@@ -187,3 +187,50 @@ def test_partials_empty_inventory_message():
     resp = client.get("/partials/models")
     assert resp.status_code == 200
     assert "no model is installed" in resp.text.lower()
+
+
+# --- Capacité GPU affichée dans la table (V8.1) -------------------------
+
+
+@respx.mock
+def test_partials_show_readable_sizes_and_a_fit_verdict(monkeypatch):
+    from app.schemas import GpuMemory
+    from app.services import gpu as gpu_service
+
+    gib = 1024 ** 3
+    monkeypatch.setattr(
+        gpu_service, "read_memory",
+        lambda: GpuMemory(total_bytes=16 * gib, used_bytes=6 * gib,
+                          free_bytes=10 * gib),
+    )
+    entry = {
+        "name": "big:latest", "model": "big:latest",
+        "size": int(18.5 * gib), "digest": "d1", "details": {},
+    }
+    respx.get(f"{BASE}/api/tags").mock(
+        return_value=httpx.Response(200, json={"models": [entry]})
+    )
+    respx.get(f"{BASE}/api/ps").mock(
+        return_value=httpx.Response(200, json={"models": []})
+    )
+    body = client.get("/partials/models").text
+
+    assert "GiB" in body                 # taille lisible, pas des octets bruts
+    assert str(int(18.5 * gib)) not in body
+    assert "too large" in body           # 18.5 GiB ne tient pas sur 16 GiB
+    assert "GPU memory" in body
+
+
+@respx.mock
+def test_partials_omit_the_fit_column_without_a_gpu(monkeypatch):
+    from app.services import gpu as gpu_service
+
+    monkeypatch.setattr(gpu_service, "read_memory", lambda: None)
+    respx.get(f"{BASE}/api/tags").mock(
+        return_value=httpx.Response(200, json={"models": []})
+    )
+    respx.get(f"{BASE}/api/ps").mock(
+        return_value=httpx.Response(200, json={"models": []})
+    )
+    body = client.get("/partials/models").text
+    assert "GPU memory" not in body      # rien d'invente quand on ne sait pas

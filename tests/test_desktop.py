@@ -12,19 +12,35 @@ def test_find_free_port_stays_in_allocated_range():
     assert desktop.PORT_START <= port <= desktop.PORT_END
 
 
+def _occupy_a_port_in_range(sock: socket.socket) -> int:
+    """Take a port inside the allocated range and return it.
+
+    Occupying first and asking afterwards avoids the race the earlier version
+    had: asking `_find_free_port()` for a port, then binding it a moment later,
+    fails whenever anything grabs it in between — a running cockpit, or the
+    same port still in TIME_WAIT because the caller closed it without
+    SO_REUSEADDR, which is exactly what the production code does set.
+    """
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    for candidate in range(desktop.PORT_START, desktop.PORT_END + 1):
+        try:
+            sock.bind(("127.0.0.1", candidate))
+        except OSError:
+            continue
+        sock.listen(1)
+        return candidate
+    pytest.skip("no bindable port left in the allocated range")
+
+
 def test_find_free_port_skips_a_busy_port():
-    first = desktop._find_free_port()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as busy:
-        busy.bind(("127.0.0.1", first))
-        busy.listen(1)
-        assert desktop._find_free_port() != first
+        taken = _occupy_a_port_in_range(busy)
+        assert desktop._find_free_port() != taken
 
 
 def test_find_free_port_raises_when_range_is_exhausted():
-    taken = desktop._find_free_port()
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as busy:
-        busy.bind(("127.0.0.1", taken))
-        busy.listen(1)
+        taken = _occupy_a_port_in_range(busy)
         with pytest.raises(RuntimeError):
             desktop._find_free_port(taken, taken)
 

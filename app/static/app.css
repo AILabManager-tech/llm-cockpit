@@ -128,6 +128,9 @@ table.models th { color: var(--muted); font-weight: 600; }
   padding: 0.1rem 0.5rem;
   border-radius: 999px;
   font-size: 0.72rem;
+  /* A status pill must never wrap: a broken "too large" reads as two
+     different states and pushes the row height around. */
+  white-space: nowrap;
 }
 
 .pill.loaded { background: rgba(47, 191, 113, 0.18); color: var(--ok); }
@@ -572,3 +575,64 @@ table.train-table td {
 }
 
 table.train-table th { color: var(--muted); font-weight: 600; }
+
+/* --- GPU capacity: answers "will this model fit?" before you click --- */
+
+.gpu-status {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0.6rem 0 1rem;
+  padding: 0.55rem 0.8rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.gpu-label { color: var(--muted); }
+
+.gpu-bar {
+  flex: 1 1 180px;
+  max-width: 320px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.gpu-bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.gpu-figures { color: var(--text); }
+.gpu-figures strong { color: var(--ok); }
+
+.pill.fit-ok { background: rgba(47, 191, 113, 0.16); color: var(--ok); }
+.pill.fit-tight { background: rgba(224, 180, 100, 0.16); color: #e0b464; }
+.pill.fit-no { background: rgba(229, 72, 77, 0.16); color: var(--down); }
+
+/* Numeric columns line up only with tabular figures. */
+.models td.num, .models th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.models td.ts { white-space: nowrap; color: var(--muted); }
+
+/* --- Feedback while a load/unload is in flight --- */
+
+.btn-action[disabled],
+.btn-action.htmx-request {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.btn-action.htmx-request::after {
+  content: "…";
+  margin-left: 0.25rem;
+}

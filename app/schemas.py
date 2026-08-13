@@ -3,6 +3,14 @@ from typing import Any
 from pydantic import BaseModel, field_validator
 
 
+class GpuMemory(BaseModel):
+    """GPU memory as reported by the driver. Absent rather than guessed."""
+
+    total_bytes: int
+    used_bytes: int
+    free_bytes: int
+
+
 class ModelInfo(BaseModel):
     name: str
     normalized_name: str

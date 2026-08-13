@@ -155,6 +155,18 @@
     ["role (optional, e.g. chat)", "rôle (optionnel, ex. chat)"],
     [". An app calls", ". Une app appelle"],
     ["or a real model.", "ou un modèle réel."],
+    // --- GPU capacity ---
+    ["GPU memory", "Mémoire GPU"],
+    ["free", "libre"],
+    ["fits", "tient"],
+    ["tight", "juste"],
+    ["too large", "trop gros"],
+    ["Fit", "Tient ?"],
+    ["Fits in the memory free right now", "Tient dans la mémoire libre en ce moment"],
+    ["Fits on the card, but not in the memory free right now",
+     "Tient sur la carte, mais pas dans la mémoire libre en ce moment"],
+    ["Larger than this GPU: it will spill over to the CPU",
+     "Plus gros que ce GPU : le modèle débordera sur le CPU"],
     // --- Backend messages (routing, actions, checks) ---
     ["role not assigned", "rôle non assigné"],
     ["role model unavailable (provider unreachable or model missing)",
@@ -223,6 +235,7 @@
     [/^role not assigned: /, "rôle non assigné : "],
     [/^embedding model not installed: /, "modèle d'embedding non installé : "],
     [/^embeddings: /, "embeddings : "],
+    [/^of /, "sur "],
   ];
 
   function normalize(text) {
