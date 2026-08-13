@@ -51,6 +51,13 @@ APP_MODE_BROWSERS = (
 
 
 def _default_data_dir() -> Path:
+    """Where the cockpit keeps its own data (gateway history, roles, RAG).
+
+    On Linux this is XDG_STATE_HOME, deliberately *not* XDG_DATA_HOME: the
+    Linux installer puts the application itself under
+    `XDG_DATA_HOME/llm-cockpit` and the uninstaller removes that tree. Sharing
+    the directory would mean uninstalling silently deletes the user's data.
+    """
     home = Path.home()
     system = platform.system().lower()
     if system == "windows":
@@ -58,10 +65,10 @@ def _default_data_dir() -> Path:
         return base / "LLM Cockpit"
     if system == "darwin":
         return home / "Library" / "Application Support" / "LLM Cockpit"
-    xdg = os.getenv("XDG_DATA_HOME")
-    if xdg:
-        return Path(xdg) / "llm-cockpit"
-    return home / ".local" / "share" / "llm-cockpit"
+    xdg_state = os.getenv("XDG_STATE_HOME")
+    if xdg_state:
+        return Path(xdg_state) / "llm-cockpit"
+    return home / ".local" / "state" / "llm-cockpit"
 
 
 def _find_free_port(start: int = PORT_START, end: int = PORT_END) -> int:

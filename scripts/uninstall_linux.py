@@ -13,8 +13,11 @@ import shutil
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(ROOT))
 
+from app.desktop import _default_data_dir  # noqa: E402
 from install_linux import (  # noqa: E402
     APP_NAME,
     applications_dir,
@@ -48,6 +51,12 @@ def main() -> int:
 
     for path in removed:
         print(f"removed {path}")
+
+    # Never removed by an uninstall: gateway history, role assignments,
+    # ingested documents, datasets and adapters all live there.
+    data_dir = _default_data_dir()
+    if data_dir.exists():
+        print(f"kept your data in {data_dir} (delete it by hand if you want it gone)")
     return 0
 
 

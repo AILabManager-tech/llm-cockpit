@@ -55,6 +55,22 @@ def test_installer_honours_xdg_overrides(monkeypatch, tmp_path):
     assert install_linux.applications_dir() == tmp_path / "data" / "applications"
 
 
+def test_user_data_never_lives_inside_the_installation(monkeypatch, tmp_path):
+    # Both used to resolve to ~/.local/share/llm-cockpit, so uninstalling
+    # (which rmtree's the install root) wiped the user's gateway history,
+    # roles, ingested documents and datasets without a word.
+    from app import desktop
+
+    monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path / "data"))
+    monkeypatch.delenv("XDG_STATE_HOME", raising=False)
+    monkeypatch.setattr(desktop.platform, "system", lambda: "Linux")
+
+    install_root = install_linux.install_dir()
+    data_dir = desktop._default_data_dir()
+    assert install_root != data_dir
+    assert install_root not in data_dir.parents
+
+
 def test_deb_depends_are_declared():
     # QtWebEngine needs system libraries the bundle does not carry.
     assert "libnss3" in build_deb.RUNTIME_DEPENDS
