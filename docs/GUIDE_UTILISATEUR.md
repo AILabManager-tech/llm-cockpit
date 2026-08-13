@@ -82,15 +82,39 @@ interrogée. Un cockpit qui n'affiche aucun modèle mais dit `reachable` signifi
 qu'aucun modèle n'est installé — le message le distingue explicitement d'un
 Ollama injoignable.
 
+**Le bandeau mémoire GPU**, juste sous le statut d'Ollama, indique combien de
+mémoire vidéo reste libre sur combien au total, avec une barre d'occupation.
+Il n'apparaît que si la mémoire du GPU a pu être lue (`nvidia-smi`) : sur une
+machine sans GPU, rien ne s'affiche plutôt qu'un chiffre inventé.
+
 **Le tableau des modèles** fusionne deux sources : les modèles installés
 (`/api/tags`) et les modèles chargés en mémoire (`/api/ps`). La colonne
 **State** dit `loaded` ou `not loaded`, et **Source** indique d'où vient
 l'information — `ps_only` signale un modèle chargé mais absent de la liste des
 installés, ce qui est une anomalie à connaître.
 
+Les tailles sont affichées en unités lisibles (`18.5 GiB`) et les dates à la
+minute, pas en octets bruts ni en horodatage ISO complet.
+
+**La colonne Fit** répond à la question qui précède tout chargement :
+
+| Verdict | Ce que ça veut dire |
+|---|---|
+| `fits` | Tient dans la mémoire libre en ce moment |
+| `tight` | Tient sur la carte, mais pas dans ce qui est libre actuellement |
+| `too large` | Plus gros que le GPU entier : le modèle débordera sur le CPU |
+
+Le verdict se recalcule à chaque rafraîchissement : charger un modèle fait
+passer les autres de `fits` à `tight`, puisqu'il reste moins de place. Une
+marge est gardée, parce que le poids du modèle sur disque n'est pas toute son
+empreinte réelle — le contexte et le cache s'y ajoutent. Sans GPU lisible ou
+sans taille connue, la colonne affiche `—` plutôt qu'une supposition.
+
 **Colonne Actions** : `Load` charge le modèle en mémoire, `Unload` le décharge.
 Ces boutons n'apparaissent que pour Ollama et seulement si les actions sont
-activées.
+activées. Pendant l'opération le bouton s'estompe et se désactive : charger un
+modèle de 32 milliards de paramètres peut prendre une minute, inutile de
+recliquer.
 
 **Tester un modèle** : le panneau « Test a model » envoie une invite à un
 modèle et affiche la réponse dans le journal d'actions, en bas de page. Laisse
