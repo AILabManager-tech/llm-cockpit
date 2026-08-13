@@ -6,5 +6,5 @@ Comment=Local-first LLM cockpit
 Exec=llm-cockpit
 Icon=llm-cockpit
 Terminal=false
-Categories=Development;Utility;
+Categories=Development;
 StartupWMClass=LLM-Cockpit

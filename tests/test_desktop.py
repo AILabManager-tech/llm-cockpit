@@ -118,18 +118,18 @@ def test_window_icon_found_next_to_the_module():
     icon = desktop._window_icon()
     assert icon is not None
     assert icon.is_file()
-    assert icon.name == "llm-cockpit-favicon.svg"
+    assert icon.parent.name == "icons"
 
 
 def test_window_icon_found_one_level_up_like_the_frozen_bundle(
     monkeypatch, tmp_path
 ):
     # Frozen layout: desktop.py at the root, assets under app/static/.
-    bundled = tmp_path / "app" / "static"
+    bundled = tmp_path / "app" / "static" / "icons"
     bundled.mkdir(parents=True)
-    (bundled / "llm-cockpit-favicon.svg").write_text("<svg/>", encoding="utf-8")
+    (bundled / "256.png").write_bytes(b"\x89PNG")
     monkeypatch.setattr(desktop, "__file__", str(tmp_path / "desktop.py"))
-    assert desktop._window_icon() == bundled / "llm-cockpit-favicon.svg"
+    assert desktop._window_icon() == bundled / "256.png"
 
 
 def test_window_icon_is_none_when_missing(monkeypatch, tmp_path):

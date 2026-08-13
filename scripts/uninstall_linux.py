@@ -20,10 +20,13 @@ sys.path.insert(0, str(ROOT))
 from app.desktop import _default_data_dir  # noqa: E402
 from install_linux import (  # noqa: E402
     APP_NAME,
+    ICON_SIZES,
     applications_dir,
     bin_dir,
     icons_dir,
+    icons_root,
     install_dir,
+    refresh_desktop_caches,
 )
 
 
@@ -31,9 +34,12 @@ def main() -> int:
     install_root = install_dir()
     files = [
         applications_dir() / f"{APP_NAME}.desktop",
-        icons_dir() / f"{APP_NAME}.svg",
         bin_dir() / APP_NAME,
+        # Icon themes prefer a scalable SVG over the sized PNGs, so a leftover
+        # from an older install would keep showing the previous logo.
+        icons_root() / "scalable" / "apps" / f"{APP_NAME}.svg",
     ]
+    files += [icons_dir(size) / f"{APP_NAME}.png" for size in ICON_SIZES]
 
     removed: list[Path] = []
     for path in files:
@@ -48,6 +54,10 @@ def main() -> int:
     if not removed:
         print(f"nothing to uninstall (looked under {install_root.parent})")
         return 0
+
+    # Without this the icon cache keeps answering for a file that is gone,
+    # leaving a ghost entry in the menu.
+    refresh_desktop_caches()
 
     for path in removed:
         print(f"removed {path}")

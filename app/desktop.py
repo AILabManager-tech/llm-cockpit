@@ -131,10 +131,8 @@ def _window_icon() -> Path | None:
     the bundle root, one level above `app/` — hence the two candidates.
     """
     here = Path(__file__).resolve().parent
-    for candidate in (
-        here / "static" / "llm-cockpit-favicon.svg",
-        here / "app" / "static" / "llm-cockpit-favicon.svg",
-    ):
+    for base in (here, here / "app"):
+        candidate = base / "static" / "icons" / "256.png"
         if candidate.is_file():
             return candidate
     return None

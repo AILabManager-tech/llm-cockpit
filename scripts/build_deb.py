@@ -17,6 +17,10 @@ import tomllib
 from pathlib import Path
 
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from install_linux import ICON_SIZES  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist" / "linux"
 BUILD_ROOT = ROOT / "build" / "deb"
@@ -25,7 +29,7 @@ DEBIAN = PKG_ROOT / "DEBIAN"
 OPT_ROOT = PKG_ROOT / "opt" / "llm-cockpit"
 USR_BIN = PKG_ROOT / "usr" / "bin"
 APP_DIR = PKG_ROOT / "usr" / "share" / "applications"
-ICON_DIR = PKG_ROOT / "usr" / "share" / "icons" / "hicolor" / "scalable" / "apps"
+ICON_ROOT = PKG_ROOT / "usr" / "share" / "icons" / "hicolor"
 
 
 # System libraries QtWebEngine needs but the bundle does not carry. Measured,
@@ -96,7 +100,6 @@ def write_file(path: Path, content: str, mode: int | None = None) -> None:
 
 
 def assemble_deb_files(bundle_dir: Path) -> None:
-    ICON_DIR.mkdir(parents=True, exist_ok=True)
     launcher_path = USR_BIN / "llm-cockpit"
     write_file(
         launcher_path,
@@ -116,17 +119,19 @@ def assemble_deb_files(bundle_dir: Path) -> None:
                 "Exec=/usr/bin/llm-cockpit",
                 "Icon=llm-cockpit",
                 "Terminal=false",
-                "Categories=Development;Utility;",
+                "Categories=Development;",
                 "StartupWMClass=LLM-Cockpit",
             ]
         )
         + "\n",
     )
 
-    shutil.copy2(
-        ROOT / "app" / "static" / "llm-cockpit-favicon.svg",
-        ICON_DIR / "llm-cockpit.svg",
-    )
+    # One PNG per size, as the icon theme spec expects.
+    for size in ICON_SIZES:
+        target = ICON_ROOT / f"{size}x{size}" / "apps"
+        target.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / "app" / "static" / "icons" / f"{size}.png",
+                     target / "llm-cockpit.png")
 
     write_file(
         DEBIAN / "control",
@@ -156,7 +161,7 @@ def assemble_deb_files(bundle_dir: Path) -> None:
                 "#!/bin/sh",
                 "set -e",
                 "if command -v gtk-update-icon-cache >/dev/null 2>&1; then",
-                "  gtk-update-icon-cache -q /usr/share/icons/hicolor || true",
+                "  gtk-update-icon-cache -q -f /usr/share/icons/hicolor || true",
                 "fi",
                 "if command -v update-desktop-database >/dev/null 2>&1; then",
                 "  update-desktop-database /usr/share/applications || true",
