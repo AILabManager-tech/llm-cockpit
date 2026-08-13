@@ -7,6 +7,14 @@
   const exact = new Map([
     ["Inventory", "Inventaire"],
     ["Dashboard", "Tableau de bord"],
+    // Onglets de section
+    ["Models", "Modèles"],
+    ["Routing", "Routage"],
+    ["Traffic", "Trafic"],
+    ["Lab", "Labo"],
+    ["Which model answers for which role", "Quel modèle répond pour quel rôle"],
+    ["Measure, then improve: evaluations gate what RAG and adaptation are worth.",
+     "Mesurer, puis améliorer : les évaluations valident ce que valent le RAG et l'adaptation."],
     ["Refresh", "Rafraîchir"],
     ["Test a model", "Tester un modèle"],
     ["Test", "Tester"],

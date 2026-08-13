@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="controls">
+  <button
+    class="btn-refresh"
+    hx-get="/partials/dashboard"
+    hx-target="#dashboard-panel"
+    hx-swap="innerHTML">
+    Refresh
+  </button>
+  <span class="poll-note">Gateway activity — auto-refresh every 5&nbsp;s</span>
+</section>
+
+<div
+  id="dashboard-panel"
+  hx-get="/partials/dashboard"
+  hx-trigger="every 5s, refresh"
+  hx-swap="innerHTML">
+  {% include "partials/dashboard.html" %}
+</div>
+{% endblock %}

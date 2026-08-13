@@ -13,35 +13,11 @@
 </section>
 
 <div
-  id="providers-panel"
-  hx-get="/partials/providers"
-  hx-trigger="every 10s, refresh"
-  hx-swap="innerHTML">
-  {% include "partials/providers_panel.html" %}
-</div>
-
-<div
   id="models-panel"
   hx-get="/partials/models"
   hx-trigger="every 5s, refresh"
   hx-swap="innerHTML">
   {% include "partials/models_table.html" %}
-</div>
-
-<div
-  id="roles-panel"
-  hx-get="/partials/roles"
-  hx-trigger="refresh"
-  hx-swap="innerHTML">
-  {% include "partials/roles_panel.html" %}
-</div>
-
-<div
-  id="gateway-panel"
-  hx-get="/partials/gateway"
-  hx-trigger="every 10s, refresh"
-  hx-swap="innerHTML">
-  {% include "partials/gateway_panel.html" %}
 </div>
 
 {% if actions_enabled %}
@@ -51,6 +27,7 @@
     hx-post="/api/actions/test"
     hx-ext="json-enc"
     hx-swap="none"
+    hx-disabled-elt="find button"
     hx-on::after-request="htmx.trigger('#actions-panel', 'refresh')">
     <select name="model" aria-label="Model to test">
       {% for m in models %}

@@ -2,7 +2,7 @@ import asyncio
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request, Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from datetime import datetime
 
 from fastapi.staticfiles import StaticFiles
@@ -536,23 +536,38 @@ async def _aggregate_models() -> list[ModelInfo]:
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request) -> HTMLResponse:
+async def page_models(request: Request) -> HTMLResponse:
+    """What is installed, what is loaded, what you act on daily."""
     health = await get_adapter().healthcheck()
     models = await _aggregate_models()
-    gpu = gpu_service.read_memory()
+    return templates.TemplateResponse(
+        request,
+        "models.html",
+        {
+            "active_tab": "/",
+            "health": health,
+            "models": models,
+            "gpu": gpu_service.read_memory(),
+            "fit": gpu_service.fit_verdict,
+            "actions_enabled": config.ACTIONS_ENABLED,
+            "entries": action_log.read_entries(limit=50),
+        },
+    )
+
+
+@app.get("/routing", response_class=HTMLResponse)
+async def page_routing(request: Request) -> HTMLResponse:
+    """Which model answers for which role, and through which provider."""
+    models = await _aggregate_models()
     roles, roles_error = await _roles_view()
     providers, drift, providers_error = await _providers_view()
     routes, gateway_error = await _gateway_view()
     return templates.TemplateResponse(
         request,
-        "inventory.html",
+        "routing.html",
         {
-            "health": health,
+            "active_tab": "/routing",
             "models": models,
-            "gpu": gpu,
-            "fit": gpu_service.fit_verdict,
-            "actions_enabled": config.ACTIONS_ENABLED,
-            "entries": action_log.read_entries(limit=50),
             "roles": roles,
             "roles_error": roles_error,
             "providers": providers,
@@ -563,6 +578,45 @@ async def index(request: Request) -> HTMLResponse:
             "gateway_enabled": config.GATEWAY_ENABLED,
         },
     )
+
+
+@app.get("/traffic", response_class=HTMLResponse)
+async def page_traffic(request: Request) -> HTMLResponse:
+    """What actually went through the gateway."""
+    return templates.TemplateResponse(
+        request,
+        "traffic.html",
+        {
+            "active_tab": "/traffic",
+            "summary": stats.compute_stats(),
+            "logs": store.query_logs(limit=50),
+        },
+    )
+
+
+@app.get("/lab", response_class=HTMLResponse)
+async def page_lab(request: Request) -> HTMLResponse:
+    """Evaluations, RAG and adaptation — one loop, one tab."""
+    return templates.TemplateResponse(
+        request,
+        "lab.html",
+        {
+            "active_tab": "/lab",
+            "scoreboard": scoreboard_service.compute_scoreboard(),
+            "runs": store.query_eval_runs(limit=10),
+            "suites": list_suites(),
+            "documents": rag_store.list_documents(),
+            "embed_model": config.RAG_EMBED_MODEL,
+            "answer": None,
+            **_training_context(),
+        },
+    )
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def page_dashboard_redirect() -> RedirectResponse:
+    """The dashboard became Traffic; old links keep working."""
+    return RedirectResponse("/traffic", status_code=308)
 
 
 @app.get("/partials/models", response_class=HTMLResponse)
@@ -629,27 +683,7 @@ async def partials_gateway(request: Request) -> HTMLResponse:
     )
 
 
-# --- V5 : dashboard d'observabilité -------------------------------------
-
-
-@app.get("/dashboard", response_class=HTMLResponse)
-async def dashboard(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(
-        request,
-        "dashboard.html",
-        {
-            "summary": stats.compute_stats(),
-            "logs": store.query_logs(limit=50),
-            # Contexte des panneaux inclus en ligne (scoreboard V6, RAG V7).
-            "scoreboard": scoreboard_service.compute_scoreboard(),
-            "runs": store.query_eval_runs(limit=10),
-            "suites": list_suites(),
-            "documents": rag_store.list_documents(),
-            "embed_model": config.RAG_EMBED_MODEL,
-            "answer": None,
-            **_training_context(),
-        },
-    )
+# --- V5 : observabilité (page Traffic) ----------------------------------
 
 
 @app.get("/partials/dashboard", response_class=HTMLResponse)

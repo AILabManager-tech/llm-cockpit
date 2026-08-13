@@ -2,24 +2,10 @@
 
 {% block content %}
 <section class="controls">
-  <a class="btn-refresh" href="/">← Inventory</a>
-  <button
-    class="btn-refresh"
-    hx-get="/partials/dashboard"
-    hx-target="#dashboard-panel"
-    hx-swap="innerHTML">
-    Refresh
-  </button>
-  <span class="poll-note">Gateway activity — auto-refresh every 5&nbsp;s</span>
+  <span class="poll-note">
+    Measure, then improve: evaluations gate what RAG and adaptation are worth.
+  </span>
 </section>
-
-<div
-  id="dashboard-panel"
-  hx-get="/partials/dashboard"
-  hx-trigger="every 5s, refresh"
-  hx-swap="innerHTML">
-  {% include "partials/dashboard.html" %}
-</div>
 
 <div
   id="scoreboard-panel"

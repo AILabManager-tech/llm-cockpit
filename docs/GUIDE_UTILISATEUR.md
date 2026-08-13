@@ -65,6 +65,26 @@ Fermer la fenêtre arrête le serveur. Il ne reste rien en tâche de fond.
 Les deux premiers sont **séparés volontairement** : désinstaller l'application
 ne touche pas à tes données.
 
+### Les quatre onglets
+
+L'interface est découpée par tâche, pas par couche technique. Chaque onglet ne
+rafraîchit que ce qu'il affiche : tu ne paies pas le coût de ce que tu ne
+regardes pas.
+
+| Onglet | Ce qu'on y fait | La question qu'il pose |
+|---|---|---|
+| **Models** | Inventaire, chargement, test, journal | Qu'est-ce qui tourne, qu'est-ce que je charge ? |
+| **Routing** | Rôles, table de routage, fournisseurs | Qui répond à quoi ? |
+| **Traffic** | Statistiques et requêtes du gateway | Qu'est-ce qui s'est passé ? |
+| **Lab** | Évaluations, RAG, adaptation LoRA | Est-ce que je peux faire mieux ? |
+
+Le regroupement du **Lab** n'est pas arbitraire : ces trois-là forment une
+boucle dans le code — le RAG se mesure avec le harnais d'évaluations, et une
+promotion LoRA est refusée sans évaluation favorable.
+
+L'ancienne adresse `/dashboard` redirige vers **Traffic** : tes anciens liens
+continuent de fonctionner.
+
 ### Prérequis
 
 Ollama doit tourner sur `http://127.0.0.1:11434`. Si le cockpit affiche
@@ -137,7 +157,7 @@ Sept rôles existent, fixés :
 
 `chat` · `code` · `vision` · `embedding` · `fast` · `quality` · `experimental`
 
-Assigne un modèle à un rôle depuis le panneau **Roles**. L'intérêt vient à la
+Assigne un modèle à un rôle depuis l'onglet **Routing**, panneau **Roles**. L'intérêt vient à la
 section 6 : tes applications appelleront `code` au lieu de
 `qwen2.5-coder:7b`, et tu changeras de modèle sans toucher à leur code.
 
@@ -153,7 +173,7 @@ Les assignations sont dans `~/.local/state/llm-cockpit/roles.json`.
 
 ## 5. Registry — brancher d'autres fournisseurs
 
-Ollama est présent par défaut. Le panneau **Providers** permet d'ajouter tout
+Ollama est présent par défaut. Dans l'onglet **Routing**, le panneau **Providers** permet d'ajouter tout
 service exposant une API compatible OpenAI : donne un identifiant, choisis
 `openai_compat`, indique l'URL de base.
 
@@ -218,7 +238,7 @@ silencieux vers un autre modèle.
 
 ## 7. Tableau de bord — ce qui s'est réellement passé
 
-Onglet **Dashboard**. Chaque requête passée par le gateway y est enregistrée
+Onglet **Traffic**. Chaque requête passée par le gateway y est enregistrée
 dans une base SQLite locale.
 
 Tu y lis : le nombre de requêtes, le taux d'erreur, les latences p50 et p95, la
@@ -250,7 +270,7 @@ Huit checks existent :
 | `min_length:n` / `max_length:n` | longueur de la réponse |
 | `latency_lt:ms` | la réponse est arrivée en moins de `ms` |
 
-Dans le panneau **Scoreboard** : choisis la suite, saisis les modèles à
+Dans l'onglet **Lab**, panneau **Scoreboard** : choisis la suite, saisis les modèles à
 comparer séparés par des virgules (des rôles sont acceptés), lance. Tu obtiens
 le taux de réussite, le nombre de cas, la latence moyenne et les erreurs, par
 modèle.
@@ -282,7 +302,7 @@ Pointe `EVALS_DIR` vers ton dossier de suites pour qu'elles soient chargées.
 ## 9. RAG — répondre à partir de tes documents
 
 **Ingérer.** Dépose tes fichiers dans `~/.local/state/llm-cockpit/rag/docs/`,
-puis indique le nom du fichier dans le panneau **Local RAG** (chemin relatif à
+puis indique le nom du fichier dans l'onglet **Lab**, panneau **Local RAG** (chemin relatif à
 ce dossier — un chemin qui en sort est refusé).
 
 Formats acceptés : `.txt`, `.md`, `.pdf`.

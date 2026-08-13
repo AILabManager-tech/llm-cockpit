@@ -21,9 +21,18 @@
         <p class="subtitle">Inventory → control → roles → registry → gateway → observability → evals → RAG → adaptation</p>
       </div>
     </div>
-    <nav class="topnav">
-      <a href="/">Inventory</a>
-      <a href="/dashboard">Dashboard</a>
+    <nav class="topnav" aria-label="Sections">
+      {% set sections = [
+        ("/", "Models"),
+        ("/routing", "Routing"),
+        ("/traffic", "Traffic"),
+        ("/lab", "Lab"),
+      ] %}
+      {% for href, label in sections %}
+        <a href="{{ href }}"
+           class="tab{{ ' is-active' if href == active_tab else '' }}"
+           {%- if href == active_tab %} aria-current="page"{% endif %}>{{ label }}</a>
+      {% endfor %}
       <button class="lang-switch" type="button" data-lang="en">EN</button>
       <button class="lang-switch" type="button" data-lang="fr">FR</button>
     </nav>

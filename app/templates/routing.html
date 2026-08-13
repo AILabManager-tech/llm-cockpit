@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="controls">
+  <button
+    class="btn-refresh"
+    hx-get="/partials/roles"
+    hx-target="#roles-panel"
+    hx-swap="innerHTML">
+    Refresh
+  </button>
+  <span class="poll-note">Which model answers for which role</span>
+</section>
+
+<div
+  id="roles-panel"
+  hx-get="/partials/roles"
+  hx-trigger="refresh"
+  hx-swap="innerHTML">
+  {% include "partials/roles_panel.html" %}
+</div>
+
+<div
+  id="gateway-panel"
+  hx-get="/partials/gateway"
+  hx-trigger="every 10s, refresh"
+  hx-swap="innerHTML">
+  {% include "partials/gateway_panel.html" %}
+</div>
+
+<div
+  id="providers-panel"
+  hx-get="/partials/providers"
+  hx-trigger="every 10s, refresh"
+  hx-swap="innerHTML">
+  {% include "partials/providers_panel.html" %}
+</div>
+{% endblock %}

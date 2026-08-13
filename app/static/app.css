@@ -347,6 +347,35 @@ table.routes-table th { color: var(--muted); font-weight: 600; }
   font-size: 0.85rem;
 }
 
+/* --- Section tabs --- */
+
+.topnav .tab {
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  color: var(--muted);
+  transition: color 0.12s ease, background 0.12s ease;
+}
+
+.topnav .tab:hover { color: var(--text); background: rgba(76, 125, 255, 0.09); }
+
+/* The current section is stated, not merely hinted: colour alone would not
+   survive a colour-vision difference, so it also carries a border. */
+.topnav .tab.is-active {
+  color: var(--text);
+  background: rgba(76, 125, 255, 0.16);
+  border-color: var(--accent);
+}
+
+.topnav .tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topnav .tab { transition: none; }
+}
+
 .topnav a:hover { text-decoration: underline; }
 
 .lang-switch {
