@@ -94,7 +94,7 @@ def promote(version_id: int) -> ModelVersion:
 
     if version["pass_rate"] <= baseline["pass_rate"]:
         raise PromotionError(
-            f"évals défavorables : candidat {version['pass_rate']:.3f} "
+            f"unfavourable evals: candidate {version['pass_rate']:.3f} "
             f"<= baseline {baseline['pass_rate']:.3f}"
         )
 

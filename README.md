@@ -106,6 +106,12 @@ Qt comes from **PySide6 under LGPLv3**, kept dynamically linked in the
 PyInstaller `onedir` bundle so the Qt libraries remain replaceable, which is
 what the LGPL requires. The cockpit's own code stays MIT.
 
+## User guide
+
+A detailed walkthrough of every panel — inventory, roles, gateway, dashboard,
+evals, RAG, LoRA orchestration, configuration and troubleshooting — is in
+[`docs/GUIDE_UTILISATEUR.md`](docs/GUIDE_UTILISATEUR.md) (French).
+
 ## Tests
 
 ```bash

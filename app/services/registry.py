@@ -75,7 +75,7 @@ def _read_providers() -> list[ProviderConfig]:
             result.append(ProviderConfig(**entry))
         except (TypeError, ValueError) as exc:
             raise RegistryConfigError(
-                f"entrée provider invalide : {entry!r}"
+                f"invalid provider entry: {entry!r}"
             ) from exc
     return result
 
@@ -116,7 +116,7 @@ class RegistryService:
             raise DuplicateProviderError(f"id already registered: {pc.id}")
         if any(p.base_url == pc.base_url for p in providers):
             raise DuplicateProviderError(
-                f"base_url déjà enregistré : {pc.base_url}"
+                f"base_url already registered: {pc.base_url}"
             )
         providers.append(pc)
         _write_providers(providers)
