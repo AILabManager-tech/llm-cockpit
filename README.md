@@ -106,6 +106,13 @@ Qt comes from **PySide6 under LGPLv3**, kept dynamically linked in the
 PyInstaller `onedir` bundle so the Qt libraries remain replaceable, which is
 what the LGPL requires. The cockpit's own code stays MIT.
 
+## Learning it
+
+Start with [`docs/FORMATION.md`](docs/FORMATION.md) (French): six real
+situations with screenshots — will this model fit, swapping a model without
+touching your scripts, finding what is slow, and picking between models on
+measurements rather than intuition.
+
 ## User guide
 
 A detailed walkthrough of every panel — inventory, roles, gateway, dashboard,
