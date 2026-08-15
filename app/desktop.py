@@ -71,15 +71,26 @@ def _default_data_dir() -> Path:
     return home / ".local" / "state" / "llm-cockpit"
 
 
-def _find_free_port(start: int = PORT_START, end: int = PORT_END) -> int:
+def bind_free_port(
+    start: int = PORT_START, end: int = PORT_END
+) -> tuple[socket.socket, int]:
+    """Reserve a port and keep holding it.
+
+    Returns the listening socket, not just the number. Handing the socket to
+    uvicorn closes the window where anything else could take the port: the
+    earlier version bound a port, closed it, and let uvicorn bind it again a
+    moment later. Caller owns the socket and must close it on failure.
+    """
     for port in range(start, end + 1):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            try:
-                sock.bind(("127.0.0.1", port))
-            except OSError:
-                continue
-            return port
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind(("127.0.0.1", port))
+        except OSError:
+            sock.close()
+            continue
+        sock.listen(128)
+        return sock, port
     raise RuntimeError(f"no free port found in range {start}-{end}")
 
 
@@ -105,19 +116,20 @@ def _configure_env(data_dir: Path, port: int) -> None:
     os.environ.setdefault("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 
 
-def _start_server(port: int):
+def _start_server(sock: socket.socket, port: int):
+    """Serve on the socket already held, never on a port looked up again."""
     from app.main import app
     import uvicorn
 
     config = uvicorn.Config(
         app,
-        host="127.0.0.1",
-        port=port,
         log_level="warning",
         access_log=False,
     )
     server = uvicorn.Server(config)
-    thread = threading.Thread(target=server.run, daemon=True)
+    thread = threading.Thread(
+        target=lambda: server.run(sockets=[sock]), daemon=True
+    )
     thread.start()
     _wait_until_ready(port)
     return server, thread
@@ -271,10 +283,13 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
     data_dir = args.data_dir or _default_data_dir()
-    port = args.port if args.port else _find_free_port()
+    if args.port:
+        sock, port = bind_free_port(args.port, args.port)
+    else:
+        sock, port = bind_free_port()
     _configure_env(data_dir, port)
 
-    server, thread = _start_server(port)
+    server, thread = _start_server(sock, port)
     url = f"http://127.0.0.1:{port}/"
     try:
         if not _open_native_window(url) and not _open_app_window(url, data_dir):

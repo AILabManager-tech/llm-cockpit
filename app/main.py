@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app import config
+from app import __version__, config
 from app.db import store
 from app.evals import scoreboard as scoreboard_service
 from app.evals.runner import (
@@ -100,6 +100,7 @@ def _short_timestamp(value: str | None) -> str:
 
 
 templates.env.filters["short_ts"] = _short_timestamp
+templates.env.globals["version"] = __version__
 
 
 async def _read_gpu() -> GpuMemory | None:
