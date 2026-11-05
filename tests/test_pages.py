@@ -73,3 +73,10 @@ def test_the_old_dashboard_url_still_works():
     response = client.get("/dashboard", follow_redirects=False)
     assert response.status_code == 308
     assert response.headers["location"] == "/traffic"
+
+
+@pytest.mark.parametrize("path", TABS)
+def test_every_tab_has_the_back_button(path):
+    """The app window has no browser back button: each page carries its own, as the base template."""
+    body = client.get(path).text
+    assert "data-back" in body and 'd="M15 6l-6 6 6 6"' in body

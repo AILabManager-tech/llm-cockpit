@@ -12,6 +12,7 @@
     ["Routing", "Routage"],
     ["Traffic", "Trafic"],
     ["Lab", "Labo"],
+    ["Back", "Retour"],
     ["Which model answers for which role", "Quel modèle répond pour quel rôle"],
     ["Measure, then improve: evaluations gate what RAG and adaptation are worth.",
      "Mesurer, puis améliorer : les évaluations valident ce que valent le RAG et l'adaptation."],

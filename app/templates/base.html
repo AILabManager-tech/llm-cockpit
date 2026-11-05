@@ -14,6 +14,7 @@
 </head>
 <body>
   <header class="topbar">
+    <button type="button" class="topbar-back" data-back title="Back (Alt + ←)"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Back</button>
     <div class="brand">
       <img class="brand-mark" src="/static/icons/128.png" alt="" aria-hidden="true">
       <div>
@@ -40,5 +41,12 @@
   <main>
     {% block content %}{% endblock %}
   </main>
+  <script>/* Back: previous page of the cockpit, else the Models page; greyed on the home page with nothing to go back to (an app window has no browser back button). */
+  (() => {const b = document.querySelector("[data-back]"); if (!b) return; let internal = false;
+    try { internal = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
+    if (!internal && location.pathname === "/") b.setAttribute("aria-disabled", "true");
+    b.addEventListener("click", () => { if (b.getAttribute("aria-disabled") === "true") return;
+      if (internal && history.length > 1) history.back(); else location.href = "/"; });
+    document.addEventListener("keydown", (e) => { if (e.altKey && e.key === "ArrowLeft") b.click(); });})();</script>
 </body>
 </html>

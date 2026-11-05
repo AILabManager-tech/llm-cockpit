@@ -28,6 +28,31 @@ body {
   flex-wrap: wrap;
 }
 
+/* Back: first item of the top bar, as tall as the bar, melts into the navigation (same font, muted, thin separator). */
+.topbar-back {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: -1.25rem 0.25rem -1.25rem -1.5rem;
+  padding: 0 1rem 0 1.25rem;
+  min-height: 3rem;
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--border);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.topbar-back .ico { width: 1em; height: 1em; flex: 0 0 auto; transition: transform 0.15s ease; }
+.topbar-back:hover, .topbar-back:focus-visible { color: var(--text); background: var(--panel); }
+.topbar-back:hover .ico { transform: translateX(-2px); }
+.topbar-back[aria-disabled="true"] { opacity: 0.35; cursor: default; background: transparent; color: var(--muted); }
+.topbar-back[aria-disabled="true"] .ico { transform: none; }
+@media (prefers-reduced-motion: reduce) { .topbar-back, .topbar-back .ico { transition: none; } }
+
 .brand { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
 .brand-mark { width: 40px; height: 40px; flex: 0 0 auto; }
 .topbar h1 { margin: 0; font-size: 1.4rem; }
