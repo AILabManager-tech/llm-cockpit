@@ -62,7 +62,7 @@ Chaque onglet ne rafraîchit que ce qu'il affiche.
 
 ### Scénario 1 — « Est-ce que ce modèle va rentrer ? »
 
-**La situation.** Tu veux essayer `qwen2.5:32b`. Il fait 18,5 Go, ta carte en a
+**La situation.** Tu veux essayer `qwen3:14b`. Il fait 18,5 Go, ta carte en a
 15,9. Sans le cockpit, tu le charges, ça rame, et tu ne sais pas pourquoi.
 
 **Le geste.** Onglet **Models**. Tu lis la colonne `Fit`.
@@ -74,7 +74,7 @@ Chaque onglet ne rafraîchit que ce qu'il affiche.
 - **1,8 Go libres sur 15,9** — trois modèles sont déjà chargés (`loaded`), et
   la colonne VRAM montre ce que chacun consomme réellement : 2,2 Go pour
   `qwen2.5:3b`, 4,6 Go pour `qwen2.5-coder:7b`.
-- `qwen-gencore` et `qwen2.5:32b` sont **`too large`** : 18,5 Go ne rentreront
+- `qwen-gencore` et `qwen3:14b` sont **`too large`** : 18,5 Go ne rentreront
   jamais dans 15,9 Go. Les charger, c'est accepter que le modèle déborde sur le
   CPU et rame.
 - Presque tout le reste est **`tight`** : ça tiendrait sur une carte vide, mais

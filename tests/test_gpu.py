@@ -50,7 +50,7 @@ def test_read_memory_survives_a_failing_nvidia_smi(monkeypatch):
 
 
 def test_model_larger_than_the_card_is_too_large():
-    # The real case: qwen2.5:32b at ~18.5 GiB on a 16 GiB card.
+    # The real case: qwen3:14b at ~18.5 GiB on a 16 GiB card.
     assert gpu.fit_verdict(int(18.5 * GIB), _card(16, 16)) == "too_large"
 
 
